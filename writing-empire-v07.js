@@ -12,15 +12,107 @@ const pList=[["p_sp","Imperiale Tinte","+10 % SP pro Stufe",1,10],["p_gold","Gol
 function pGain(){return gameState.sp>=10000?Math.max(1,Math.floor(Math.sqrt(gameState.sp/10000))):0;}
 function renderPrestige(){if(!$("tab-prestige"))return;$("we-p-preview").textContent=pGain();$("we-p-current").textContent=Math.floor(gameState.sp);const r=$("we-p-upgrades");r.innerHTML="";pList.forEach(([id,n,d,c,m])=>{const l=gameState.prestige.upgrades[id]||0,e=document.createElement("div");e.className="we-prestige-card";e.innerHTML="<b>"+n+" ("+l+"/"+m+")</b><p>"+d+"</p><small>"+(l>=m?"MAX":c*(l+1)+" Prestige-Punkte")+"</small>";if(l<m){const b=document.createElement("button");b.className="btn";b.textContent="Kaufen";b.onclick=()=>{const cost=c*(l+1);if(gameState.prestige.points<cost)return toast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=cost;gameState.prestige.upgrades[id]=l+1;saveGameState();renderPrestige();};e.appendChild(b);}r.appendChild(e);});}
 function addPrestige(){if($("tab-prestige"))return;const nav=document.querySelector("nav"),area=document.querySelector(".content-area");if(!nav||!area)return;const b=document.createElement("button");b.className="nav-btn";b.id="we-prestige-nav";b.textContent="👑 Prestige";b.onclick=()=>{document.querySelectorAll(".tab-content").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));$("tab-prestige").classList.add("active");b.classList.add("active");};nav.insertBefore(b,nav.children[3]||null);const p=document.createElement("div");p.id="tab-prestige";p.className="tab-content";p.innerHTML='<h2>Prestige</h2><div class="we-prestige-card"><b>Voraussichtliche Belohnung</b><p><strong id="we-p-preview">0</strong> Prestige-Punkte</p><p>Aktuelle SP: <strong id="we-p-current">0</strong></p><button class="btn" id="we-p-start">Prestige starten</button><p>Normale Upgrades, SP und Textfortschritt werden zurückgesetzt. Erfolge und Prestige-Upgrades bleiben.</p></div><h3>Prestige-Upgrades</h3><div id="we-p-upgrades"></div>';area.appendChild(p);$("we-p-start").onclick=()=>{const g=pGain();if(!g)return toast("Mindestens 10.000 SP nötig.");doPrestige();};}
-function patchSkills(){const groups={case_master:"Schreibkunst",special_power:"Schreibkunst",keyboard_hint:"Spezial",auto_a:"Automatisierung",vowel_power:"Schreibkunst",consonant_power:"Schreibkunst"};SKILL_TREE.forEach(s=>{if(groups[s.id])s.group=groups[s.id];if(s.id==="consonant_power"){s.cost=Math.max(1000,s.cost*2);s.requires=["base_click"];}if(s.id==="vowel_power")s.requires=["base_click"];if(s.id==="auto_vowels")s.requires=["auto_a","auto_e"];if(s.id==="purple_power"||s.id==="purple_frequency")s.requires=["unlock_free"];if(s.id==="auto_vowels")s.requires=["auto_a","auto_e"];if(s.id==="special_power")s.label="Zeichenkunde";});["auto_e","auto_s","auto_t"].forEach((id,i)=>{if(!SKILL_TREE.some(s=>s.id===id))SKILL_TREE.push({id,label:"Automatik: "+["E","S","T"][i],desc:"Schreibt den Buchstaben automatisch.",cost:1600+i*200,maxLevel:1,requires:["unlock_auto"],group:"Automatisierung"});});[["green_focus","Grüne Konzentration","+1 SP je fünftem fehlerfreien Zeichen",1800,"Schreibkunst"],["red_rare","Rote Seltenheit","+5 SP für seltene Buchstaben",2800,"Spezial"],["long_streak","Serienmeister","Zusätzlicher Serienbonus",3200,"Schreibkunst"]].forEach(([id,label,desc,cost,group])=>{if(!SKILL_TREE.some(s=>s.id===id))SKILL_TREE.push({id,label,desc,cost,maxLevel:5,requires:["base_click"],group,color:group==="Spezial"?"red":"green"});});}
+function patchSkills(){
+ const groups={base_click:"Schreibkunst",case_master:"Schreibkunst",special_power:"Schreibkunst",keyboard_hint:"Spezial",auto_a:"Automatisierung",auto_e:"Automatisierung",auto_s:"Automatisierung",auto_t:"Automatisierung",auto_vowels:"Automatisierung",vowel_power:"Schreibkunst",consonant_power:"Schreibkunst",unlock_free:"Gold",free_speed:"Gold",gold_power:"Gold",gold_frequency:"Gold",gold_capacity:"Gold",purple_bonus:"Purpur",purple_power:"Purpur",purple_frequency:"Purpur",blue_power:"Spezial",blue_duration:"Spezial"};
+ SKILL_TREE.forEach(skill=>{
+  if(groups[skill.id])skill.group=groups[skill.id];
+  if(skill.id==="consonant_power"){skill.cost=Math.max(1000,skill.cost*2);skill.requires=["base_click"];}
+  if(skill.id==="vowel_power")skill.requires=["base_click"];
+  if(skill.id==="auto_vowels")skill.requires=["auto_a","auto_e"];
+  if(skill.id==="purple_bonus")skill.requires=["unlock_free"];
+  if(skill.id==="purple_power"||skill.id==="purple_frequency")skill.requires=["purple_bonus"];
+  if(skill.id==="special_power")skill.label="Zeichenkunde";
+  if(skill.id==="red_rare"){skill.group="Schreibkunst";skill.label="Buchstabenpräzision";}
+  if(skill.id==="green_focus")skill.label="Serienpräzision";
+ });
+ [["auto_e","Automatik: E","Schreibt automatisch ein E.",1800],["auto_s","Automatik: S","Schreibt automatisch ein S.",2000],["auto_t","Automatik: T","Schreibt automatisch ein T.",2200]].forEach(([id,label,desc,cost])=>{
+  if(!SKILL_TREE.some(x=>x.id===id))SKILL_TREE.push({id,label,desc,cost,maxLevel:1,requires:["unlock_auto"],group:"Automatisierung"});
+ });
+ if(!SKILL_TREE.some(x=>x.id==="auto_vowels"))SKILL_TREE.push({id:"auto_vowels",label:"Vokalmaschine",desc:"Schreibt Vokale automatisch. Benötigt Automatik A und E.",cost:3000,maxLevel:1,requires:["auto_a","auto_e"],group:"Automatisierung"});
+ [["green_focus","Serienpräzision","+1 SP je fünftem fehlerfreien Zeichen",1800,"Schreibkunst"],["red_rare","Buchstabenpräzision","+5 SP für seltene Buchstaben",2800,"Schreibkunst"],["long_streak","Serienmeister","Zusätzlicher Serienbonus",3200,"Schreibkunst"]].forEach(([id,label,desc,cost,group])=>{
+  if(!SKILL_TREE.some(x=>x.id===id))SKILL_TREE.push({id,label,desc,cost,maxLevel:5,requires:["base_click"],group});
+ });
+}
 function addGroupTabs(){const root=$("skilltree-container");if(!root||$("we-group-tabs"))return;const t=document.createElement("div");t.id="we-group-tabs";t.className="we-group-tabs";root.parentElement.insertBefore(t,root);["Alle","Schreibkunst","Gold","Purpur","Automatisierung","Spezial"].forEach((g,i)=>{const b=document.createElement("button");b.textContent=g;if(!i)b.classList.add("active");b.onclick=()=>{t.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active");root.querySelectorAll(".skill-node").forEach(n=>{const sk=SKILL_TREE.find(x=>x.id===n.dataset.skillId);n.classList.toggle("we-hidden",g!=="Alle"&&sk?.group!==g);});};t.appendChild(b);});}
-function patchRenderer(){const old=window.buildSkillTreeUI;window.buildSkillTreeUI=function(){old();const root=$("skilltree-container");root?.querySelectorAll(".skill-node").forEach((n,i)=>{n.dataset.weGroup=SKILL_TREE[i]?.group||"Schreibkunst";});addGroupTabs();const b=$("we-group-tabs")?.querySelector("button.active");if(b)b.click();};const oldBuy=window.buyUpgrade;window.buyUpgrade=function(id,cost){const s=SKILL_TREE.find(x=>x.id===id);if(!s)return oldBuy(id,cost);const l=gameState.upgrades[id]||0,discount=gameState.prestige.upgrades.p_discount||0;cost=Math.max(1,Math.round(cost*(1-.05*discount)));if(gameState.sp<cost)return toast("Nicht genug SP.");if((s.requires||[]).some(r=>!gameState.upgrades[r]))return toast("Voraussetzung fehlt.");gameState.sp-=cost;gameState.upgrades[id]=l+1;checkAchievements();buildSkillTreeUI();updateAllDisplays();saveGameState();toast("Upgrade gekauft: "+s.label);};}
-function patchKeyboard(){try{window.removeEventListener("keydown",handleRealKeyDown);}catch(e){}window.addEventListener("keydown",e=>{if(["Shift","CapsLock","Control","Alt","Tab","Enter","Backspace","Escape"].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;if(document.activeElement&&(document.activeElement.tagName==="INPUT"||document.activeElement.tagName==="TEXTAREA"))return;if(e.key.length!==1&&e.key!==" ")return;e.preventDefault();let ch=e.key;if(/^[a-z]$/i.test(ch)){const osUpper=!!e.getModifierState?.("CapsLock")!==!!e.shiftKey;const virtualUpper=!!gameState.settings.capsLock!==!!gameState.settings.shift;const upper=osUpper!==virtualUpper;ch=upper?ch.toUpperCase():ch.toLowerCase();if(gameState.settings.shift)gameState.settings.shift=false;}window.handleKeyInput(ch);},{capture:true});const original=window.handleKeyInput;window.handleKeyInput=function(ch){if(ch==="?123"){original(ch);return;}const expected=getCurrentTextString()[gameState.textProgress];if(expected===undefined)return finishText();if(ch!==expected){gameState.stats.errorFreeStreak=0;gameState.stats.errors=(gameState.stats.errors||0)+1;renderSeries();return;}gameState.stats.errorFreeStreak=(gameState.stats.errorFreeStreak||0)+1;gameState.stats.bestStreak=Math.max(gameState.stats.bestStreak||0,gameState.stats.errorFreeStreak);if(/[A-ZÄÖÜ]/.test(ch))gameState.stats.uppercaseCorrect=(gameState.stats.uppercaseCorrect||0)+1;const old=gameState.sp;original(ch);if(/[QXYZJ]/i.test(ch))gameState.sp+=5*(gameState.upgrades.red_rare||0);if(gameState.stats.errorFreeStreak%5===0)gameState.sp+=gameState.upgrades.green_focus||0;if(gameState.stats.errorFreeStreak%10===0)gameState.sp+=gameState.upgrades.long_streak||0;updateAllDisplays();saveGameState();};}
+function patchRenderer(){
+ const old=window.buildSkillTreeUI;
+ window.buildSkillTreeUI=function(){
+  old();
+  const root=$("skilltree-container");
+  root?.querySelectorAll(".skill-node").forEach(n=>{
+   const sk=SKILL_TREE.find(x=>x.id===n.dataset.skillId);
+   if(sk)n.dataset.weGroup=sk.group||"Schreibkunst";
+  });
+  addGroupTabs();
+  const active=$("we-group-tabs")?.querySelector("button.active")?.textContent||"Alle";
+  root?.querySelectorAll(".skill-node").forEach(n=>{
+   const sk=SKILL_TREE.find(x=>x.id===n.dataset.skillId);
+   n.classList.toggle("we-hidden",active!=="Alle"&&sk?.group!==active);
+  });
+  root?.querySelectorAll(".skill-row").forEach(row=>row.classList.toggle("we-hidden",active!=="Alle"&&![...row.querySelectorAll(".skill-node")].some(n=>!n.classList.contains("we-hidden"))));
+ };
+ const oldBuy=window.buyUpgrade;
+ window.buyUpgrade=function(id,cost){
+  const skill=SKILL_TREE.find(x=>x.id===id);
+  if(!skill)return oldBuy(id,cost);
+  const level=gameState.upgrades[id]||0,discount=gameState.prestige.upgrades.p_discount||0;
+  cost=Math.max(1,Math.round(cost*(1-.05*discount)));
+  if(gameState.sp<cost)return toast("Nicht genug SP.");
+  if((skill.requires||[]).some(req=>!gameState.upgrades[req]))return toast("Voraussetzung fehlt.");
+  gameState.sp-=cost;gameState.upgrades[id]=level+1;
+  checkAchievements();buildSkillTreeUI();updateAllDisplays();saveGameState();toast("Upgrade gekauft: "+skill.label);
+ };
+}
+function patchKeyboard(){
+ try{window.removeEventListener("keydown",handleRealKeyDown);}catch(e){}
+ if(window.__wePhysicalKeyboardHandler)window.removeEventListener("keydown",window.__wePhysicalKeyboardHandler,true);
+ window.__wePhysicalKeyboardHandler=function(e){
+  if(["Shift","CapsLock","Control","Alt","Tab","Enter","Backspace","Escape"].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
+  if(e.key.length!==1&&e.key!==" ")return;
+  e.preventDefault();
+  let ch=e.key;
+  if(/^[a-z]$/i.test(ch)){
+   const osUpper=!!e.getModifierState?.("CapsLock")!==!!e.shiftKey;
+   const virtualUpper=!!gameState.settings.capsLock!==!!gameState.settings.shift;
+   ch=osUpper!==virtualUpper?ch.toUpperCase():ch.toLowerCase();
+   if(gameState.settings.shift)gameState.settings.shift=false;
+  }
+  const visual=document.getElementById("key-"+(ch===" "?"SPACE":ch.toUpperCase()));
+  if(visual){visual.classList.add("pressed");clearTimeout(visual.__wePressTimer);visual.__wePressTimer=setTimeout(()=>visual.classList.remove("pressed"),130);}
+  window.handleKeyInput(ch);
+ };
+ window.addEventListener("keydown",window.__wePhysicalKeyboardHandler,true);
+ const original=window.handleKeyInput;
+ if(!window.__weWrappedKeyInput){
+  window.__weWrappedKeyInput=true;
+  window.handleKeyInput=function(ch){
+   const before=gameState.textProgress,expected=getCurrentTextString()[before];
+   original(ch);
+   if(gameState.textProgress!==before+1){updateAllDisplays();saveGameState();return;}
+   const streak=gameState.stats.errorFreeStreak||0;
+   if(/[QXYZJ]/i.test(expected||""))gameState.sp+=5*(gameState.upgrades.red_rare||0);
+   if(streak>0&&streak%5===0)gameState.sp+=gameState.upgrades.green_focus||0;
+   if(streak>0&&streak%10===0)gameState.sp+=gameState.upgrades.long_streak||0;
+   updateAllDisplays();saveGameState();
+  };
+ }
+}
 function addThemeMusic(){const cfg=$("tab-config");if(!cfg||$("we-theme-music"))return;const box=document.createElement("section");box.id="we-theme-music";box.className="auth-card";box.innerHTML='<h3>Design & Hintergrundmusik</h3><select id="we-theme" style="width:100%;min-height:42px"><option value="dark">Dunkel (bisherig)</option><option value="paper">Papier & Salbei (wie im Bild)</option></select><p>Beruhigende Hintergrundmusik</p><button class="btn" id="we-music">Musik starten</button><label style="display:block">Lautstärke</label><input id="we-volume" type="range" min="0" max="0.15" step="0.005" value="0.03" style="width:100%">';cfg.appendChild(box);$("we-theme").value=gameState.settings.weTheme||"dark";const apply=v=>document.body.classList.toggle("we-paper",v==="paper");apply($("we-theme").value);$("we-theme").onchange=e=>{gameState.settings.weTheme=e.target.value;apply(e.target.value);saveGameState();};let ctx=null,master=null,osc=[];$("we-music").onclick=async()=>{if(ctx){osc.forEach(o=>{try{o.stop()}catch(e){}});ctx.close();ctx=null;osc=[];$("we-music").textContent="Musik starten";return;}const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return toast("Audio nicht unterstützt.");ctx=new AC();await ctx.resume();master=ctx.createGain();master.gain.value=+$("we-volume").value;master.connect(ctx.destination);[130.81,164.81,196,261.63].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=f;g.gain.value=[.08,.05,.035,.02][i];o.connect(g);g.connect(master);o.start();osc.push(o);});$("we-music").textContent="Musik stoppen";};$("we-volume").oninput=e=>{if(master)master.gain.setTargetAtTime(+e.target.value,ctx.currentTime,.1);};}
 function addPublicAdmin(){const panel=$("admin-panel");if(!panel)return;const mo=new MutationObserver(()=>{if(panel.style.display!=="block"||$("we-public-admin"))return;const s=document.createElement("section");s.id="we-public-admin";s.className="admin-section";s.innerHTML='<h3>Öffentliche Texte für alle Spieler</h3><input id="we-pub-title" placeholder="Titel" style="width:100%;min-height:42px"><textarea id="we-pub-body" rows="5" placeholder="Kurzer oder langer Text" style="width:100%;margin-top:8px"></textarea><button class="btn" id="we-pub-add">Veröffentlichen</button><div id="we-pub-list"></div><h3>Spielstand-Verwaltung</h3><button class="btn" id="we-del-ach">Erfolge löschen</button> <button class="btn" id="we-del-progress">Textfortschritt löschen</button> <button class="btn" id="we-del-save">Gesamten Spielstand löschen</button>';($("admin-texts")||panel).appendChild(s);$("we-pub-add").onclick=publish;$("we-del-ach").onclick=()=>{askInGame("Erfolge löschen","Alle freigeschalteten Erfolge dieses Spielstands werden zurückgesetzt.",()=>{gameState.achievementsUnlocked=[];saveGameState();renderAchievements();toast("Erfolge gelöscht.");});};$("we-del-progress").onclick=()=>{askInGame("Textfortschritt löschen","Der Fortschritt im aktuellen Text wird zurückgesetzt.",()=>{gameState.textProgress=0;gameState.history=[];updateAllDisplays();saveGameState();toast("Textfortschritt gelöscht.");});};$("we-del-save").onclick=deleteSave;loadPublic();});mo.observe(panel,{attributes:true,attributeFilter:["style"]});}
 async function publish(){const title=$("we-pub-title").value.trim(),content=$("we-pub-body").value.trim();if(!title||!content)return toast("Titel und Text fehlen.");if(!supabaseClient||!currentUser)return toast("Bitte anmelden.");const {error}=await supabaseClient.from("public_texts").insert({title,content,created_by:currentUser.id});if(error)return toast("Fehler: "+error.message);$("we-pub-title").value="";$("we-pub-body").value="";await loadPublic();toast("Text für alle veröffentlicht.");}
 async function loadPublic(){if(!supabaseClient)return;const {data,error}=await supabaseClient.from("public_texts").select("id,title,content").order("created_at",{ascending:false});if(error)return;const list=$("we-pub-list");if(list)list.innerHTML="";(data||[]).forEach(r=>{const id="public_"+r.id;TEXT_TEMPLATES[id]=r.content;const sel=$("template-dropdown");if(sel&&!Array.from(sel.options).some(o=>o.value===id)){const o=document.createElement("option");o.value=id;o.textContent=r.title+" · Community";sel.appendChild(o);}if(list){const p=document.createElement("p");p.textContent=r.title+" ("+r.content.length+" Zeichen)";list.appendChild(p);}});}
-function deleteSave(){askInGame("Spielstand löschen","Der lokale und der gespeicherte Cloud-Spielstand werden gelöscht. Das kann nicht rückgängig gemacht werden.",async()=>{if(currentUser&&supabaseClient){const {error}=await supabaseClient.from("player_saves").delete().eq("user_id",currentUser.id);if(error)toast("Cloud-Fehler: "+error.message);}localStorage.removeItem("writing_empire_v04_save");localStorage.removeItem("writing_empire_v03_save");Object.assign(gameState,{sp:0,totalSpEarned:0,textProgress:0,history:[],upgrades:{},freeStock:{},freeProgress:{},customTexts:{},achievementsUnlocked:[],stats:{totalChars:0,manualChars:0,autoChars:0,goldChars:0,textsFinished:0,purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},prestige:{points:0,level:0,upgrades:{},totalPrestiges:0}});buildSkillTreeUI();updateAllDisplays();toast("Spielstand gelöscht.");});}
+function deleteSave(){
+ askInGame("Spielstand löschen","Der lokale und der gespeicherte Cloud-Spielstand werden gelöscht. Das kann nicht rückgängig gemacht werden.",async()=>{
+  if(currentUser&&supabaseClient){
+   const {error}=await supabaseClient.from("player_saves").delete().eq("user_id",currentUser.id);
+   if(error){toast("Cloud-Fehler: "+error.message+" – Spielstand wurde nicht lokal gelöscht.");return;}
+  }
+  ["writing_empire_v04_save","writing_empire_v03_save","writing_empire_v04_saved_at"].forEach(k=>localStorage.removeItem(k));
+  Object.assign(gameState,{sp:0,totalSpEarned:0,textProgress:0,history:[],upgrades:{},freeStock:{},freeProgress:{},customTexts:{},achievementsUnlocked:[],stats:{totalChars:0,manualChars:0,autoChars:0,goldChars:0,textsFinished:0,purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},prestige:{points:0,level:0,upgrades:{},totalPrestiges:0}});
+  buildSkillTreeUI();updateAllDisplays();toast("Spielstand gelöscht.");
+ });
+}
 function addTiers(){[["chars_1m","Millionenchronist","1.000.000 Zeichen",1000000,"total_chars",5000],["sp_100k","Großvermögen","100.000 SP verdient",100000,"total_sp",1000],["sp_1m","Imperialer Reichtum","1.000.000 SP verdient",1000000,"total_sp",5000],["streak_1000","Ununterbrochene Feder","1.000 fehlerfreie Zeichen",1000,"best_streak",1200],["gold_10000","Goldenes Imperium","10.000 Goldzeichen",10000,"gold_chars",2500],["purple_10000","Purpurkönig","10.000 Purpurzeichen",10000,"purple_chars",3000]].forEach(a=>{if(!ACHIEVEMENTS.some(x=>x.id===a[0]))ACHIEVEMENTS.push({id:a[0],name:a[1],desc:a[2],target:a[3],type:a[4],reward:a[5]});});}
 
 function patchAchievementsAndPreviews(){
@@ -44,7 +136,7 @@ function finalTouchups(){
  window.doPrestige=function(){const gain=pGain();if(!gain)return toast("Mindestens 10.000 SP nötig.");askInGame("Prestige starten","Du erhältst voraussichtlich "+gain+" Prestige-Punkte. Normale Upgrades, aktuelle SP und Textfortschritt werden zurückgesetzt. Erfolge und Prestige-Upgrades bleiben erhalten.",()=>{gameState.prestige.points+=gain;gameState.prestige.level++;gameState.prestige.totalPrestiges++;gameState.sp=(gameState.prestige.upgrades.p_start||0)*250;gameState.textProgress=0;gameState.history=[];gameState.upgrades={};gameState.freeStock={};gameState.freeProgress={};gameState.totalSpEarned+=gameState.sp;saveGameState();buildSkillTreeUI();updateAllDisplays();prestige();toast("Prestige abgeschlossen: +"+gain+" Punkte");});};
  // Display the automatic-writing cooldown beside the keyboard.
  if(!$("we-auto-cooldown")){const n=document.createElement("div");n.id="we-auto-cooldown";n.style.cssText="text-align:center;font-size:12px;color:var(--text-muted);margin:5px";$("virtual-keyboard")?.after(n);}
- let lastAuto=Date.now();setInterval(()=>{const n=$("we-auto-cooldown");if(n){const active=gameState.settings.autoEnabled&&(gameState.upgrades.unlock_auto||gameState.upgrades.auto_a||gameState.upgrades.auto_e||gameState.upgrades.auto_s||gameState.upgrades.auto_t);n.textContent=active?"Nächste automatische Taste: "+Math.max(0,Math.ceil((1800-(Date.now()-lastAuto))/1000))+" s":"Automatik aus";if(active&&Date.now()-lastAuto>=1800)lastAuto=Date.now();}},250);
+ setInterval(()=>{const n=$("we-auto-cooldown");if(n){const ms=window.getAutoCooldownMs?.();n.textContent=ms===null?"Automatik aus":"Nächste automatische Taste: "+Math.ceil(ms/1000)+" s";}},200);
  // Ensure cloud community texts are loaded once the Supabase session has initialized.
  const poll=()=>{if(supabaseClient){loadPublic();return;}setTimeout(poll,1500);};setTimeout(poll,1000);
 }
