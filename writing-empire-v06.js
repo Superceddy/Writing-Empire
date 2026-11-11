@@ -24,7 +24,7 @@ const st=document.createElement('style');st.textContent=css;document.head.append
 gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});
 gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});
 gameState.settings=Object.assign({language:"de",background:"default",capsLock:false,shift:false},gameState.settings||{});
-gameState.specialKeyMode=false;gameState.blueUntil=gameState.blueUntil||0;
+gameState.specialKeyMode=false;gameState.blueUntil=gameState.blueUntil||0;gameState.customTexts=gameState.customTexts||{};
 
 /* 30 achievements, with one-time rewards */
 const achievements=[
@@ -148,6 +148,7 @@ window.gameLoop=function(){
 };
 
 /* Grouped talents show live level, next level and actual prerequisites */
+window.buyUpgrade=function(id,cost){const skill=SKILL_TREE.find(s=>s.id===id);if(!skill)return;const lvl=gameState.upgrades[id]||0;if(lvl>=skill.maxLevel)return showToast("Bereits auf Maximalstufe.");if((skill.requires||[]).some(r=>(gameState.upgrades[r]||0)<1))return showToast("Voraussetzung fehlt.");if(gameState.sp<cost)return showToast("Nicht genug SP.");gameState.sp-=cost;gameState.upgrades[id]=lvl+1;checkAchievements();buildSkillTreeUI();updateAllDisplays();saveGameState();showToast("Upgrade erworben: "+skill.label);};
 window.buildSkillTreeUI=function(){
  const root=byId("skilltree-container");if(!root)return;root.innerHTML="";
  [...new Set(SKILL_TREE.map(s=>s.group||"Weitere Talente"))].forEach(g=>{
@@ -232,8 +233,8 @@ window.adminSetSP=function(){gameState.sp=Math.max(0,Number(byId("admin-sp-value
 window.adminGrantPrestige=function(){gameState.prestige.points+=Math.max(0,Number(byId("admin-pp-value").value)||0);renderPrestigeTree();saveGameState();};
 window.adminResetStats=function(){if(!confirm("Statistiken zurücksetzen?"))return;gameState.stats={totalChars:0,manualChars:0,autoChars:0,goldChars:0,textsFinished:0,purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0};updateAllDisplays();saveGameState();};
 window.adminResetUpgrades=function(){if(!confirm("Normale Upgrades zurücksetzen?"))return;gameState.upgrades={};buildSkillTreeUI();updateAllDisplays();saveGameState();};
-window.adminAddText=function(){const title=byId("admin-title").value.trim(),body=byId("admin-body").value.trim();if(!title||!body)return showToast("Titel und Inhalt fehlen.");const id="admin_"+Date.now();TEXT_TEMPLATES[id]=body;const o=document.createElement("option");o.value=id;o.textContent=title;byId("template-dropdown").appendChild(o);byId("template-dropdown").value=id;loadTemplate();showToast("Text hinzugefügt.");};
-window.adminSaveTemplate=function(){TEXT_TEMPLATES[byId("admin-template").value]=byId("admin-template-body").value;showToast("Vorlage aktualisiert.");};
+window.adminAddText=function(){const title=byId("admin-title").value.trim(),body=byId("admin-body").value.trim();if(!title||!body)return showToast("Titel und Inhalt fehlen.");const id="custom_"+Date.now();TEXT_TEMPLATES[id]=body;gameState.customTexts[id]={title:title,body:body};const o=document.createElement("option");o.value=id;o.textContent=title;byId("template-dropdown").appendChild(o);byId("template-dropdown").value=id;loadTemplate();saveGameState();showToast("Text gespeichert.");};
+window.adminSaveTemplate=function(){const id=byId("admin-template").value;TEXT_TEMPLATES[id]=byId("admin-template-body").value;if(gameState.customTexts[id])gameState.customTexts[id].body=TEXT_TEMPLATES[id];saveGameState();showToast("Vorlage aktualisiert.");};
 window.adminShowState=function(){const w=window.open("","_blank");if(w){const p=w.document.createElement("pre");p.textContent=JSON.stringify(gameState,null,2);w.document.body.appendChild(p);}};
 window.adminFullReset=function(){if(!confirm("Wirklich den gesamten Spielstand löschen?"))return;localStorage.removeItem("writing_empire_v04_save");localStorage.removeItem("writing_empire_v03_save");location.reload();};
 window.triggerAdminAccess=function(){if(currentUser?.app_metadata?.role!=="admin"){showToast("Kein Admin-Zugriff.");return;}buildAdmin();byId("admin-panel").style.display="block";adminTab("overview");byId("admin-sp").textContent=Math.floor(gameState.sp);byId("admin-chars").textContent=gameState.stats.totalChars;byId("admin-texts").textContent=gameState.stats.textsFinished;byId("admin-email").textContent=currentUser.email||"Admin";};
@@ -251,6 +252,6 @@ window.handleRealKeyDown=function(e){if(e.key==="Escape"){closeAdmin();return;}i
 const oldUpdate=window.updateAllDisplays;
 window.updateAllDisplays=function(){oldUpdate();if(byId("we-pp"))byId("we-pp").textContent=gameState.prestige.points;if(byId("we-pl"))byId("we-pl").textContent=gameState.prestige.level;if(byId("admin-panel")&&byId("admin-panel").style.display==="block"){byId("admin-sp").textContent=Math.floor(gameState.sp);byId("admin-chars").textContent=gameState.stats.totalChars;byId("admin-texts").textContent=gameState.stats.textsFinished;}};
 const oldLoad=window.loadGameState;
-window.loadGameState=function(){oldLoad();gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});gameState.settings=Object.assign({language:"de",background:"default",capsLock:false,shift:false},gameState.settings||{});};
+window.loadGameState=function(){oldLoad();gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});gameState.settings=Object.assign({language:"de",background:"default",capsLock:false,shift:false},gameState.settings||{});gameState.customTexts=gameState.customTexts||{};Object.entries(gameState.customTexts).forEach(([id,t])=>{TEXT_TEMPLATES[id]=t.body;const d=byId("template-dropdown");if(d&&!Array.from(d.options).some(o=>o.value===id)){const o=document.createElement("option");o.value=id;o.textContent=t.title||id;d.appendChild(o);}});};
 window.addEventListener("load",function(){addSettings();addPrestige();buildAdmin();buildSkillTreeUI();renderAchievements();updateAllDisplays();});
 })();
