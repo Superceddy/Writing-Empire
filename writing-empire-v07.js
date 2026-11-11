@@ -34,6 +34,7 @@ window.addEventListener("load",()=>setTimeout(init,100));
 
 /* v0.7.1 finishing corrections */
 function finalTouchups(){
+ window.playClickSound=function(){if(gameState.settings.sound===false)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const c=window.__weSfxCtx||(window.__weSfxCtx=new AC());if(c.state==="suspended")c.resume();const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=920;g.gain.setValueAtTime(.025,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.025);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.03);};
  // The physical keyboard modifier keys sit directly beneath the spacebar.
  const kb=$("virtual-keyboard");if(kb){const all=[...kb.querySelectorAll(".key")],space=$("key-SPACE"),mods=all.filter(k=>/Shift|Caps Lock/i.test(k.textContent));if(space)mods.forEach(k=>kb.appendChild(k));}
  // Show the real OS casing state (including Caps Lock) and the character expected next.
