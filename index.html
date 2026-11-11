@@ -1147,13 +1147,13 @@ let pressed = e.key;
             }
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             supabaseClient.auth.getSession().then(async ({data}) => {
-                if (data.session) { currentUser = data.session.user; cloudReady=false; await loadCloudState(); cloudReady=true; }
+                if (data.session) { currentUser = data.session.user; cloudReady=false; cloudReady=await loadCloudState(); }
                 else cloudReady=false;
                 updateAuthStatus();
             });
             supabaseClient.auth.onAuthStateChange(async (_event, session) => {
                 currentUser = session?.user || null;
-                if (currentUser) { cloudReady=false; await loadCloudState(); cloudReady=true; }
+                if (currentUser) { cloudReady=false; cloudReady=await loadCloudState(); }
                 else cloudReady=false;
                 updateAuthStatus();
             });
@@ -1188,11 +1188,11 @@ let pressed = e.key;
             currentUser=null; updateAuthStatus();
         }
         async function loadCloudState() {
-            if(!currentUser || !supabaseClient) return;
-            if(cloudLoadPromise) return cloudLoadPromise;
+            if(!currentUser || !supabaseClient) return false;
+            if(cloudLoadPromise) return await cloudLoadPromise;
             cloudLoadPromise=(async()=>{
             const {data,error}=await supabaseClient.from("player_saves").select("game_state,updated_at").eq("user_id",currentUser.id).maybeSingle();
-            if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
+            if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return false; }
             if(data?.game_state) {
                 let localState=null;
                 try { localState=JSON.parse(localStorage.getItem("writing_empire_v04_save") || "null"); } catch(e) {}
@@ -1227,8 +1227,9 @@ let pressed = e.key;
                     setAuthStatus("Lokaler Spielstand synchronisiert.");
                 }
             } else { await saveCloudState(); }
+            return true;
             })();
-            try { await cloudLoadPromise; }
+            try { return await cloudLoadPromise; }
             finally { cloudLoadPromise=null; }
         }
         async function saveCloudState() {
