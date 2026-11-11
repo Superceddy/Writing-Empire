@@ -23,7 +23,44 @@ function addModifiers(){
  kb.querySelectorAll(".key").forEach(k=>{if(k===space||k===sh||k===cap||k.id==="key-?123")return;k.onclick=()=>{const raw=k.id.slice(4);const upper=!!gameState.settings.shift!==!!gameState.settings.capsLock;const ch=/^[A-ZÄÖÜ]$/i.test(raw)?(upper?raw.toUpperCase():raw.toLowerCase()):raw;window.handleKeyInput(ch);if(gameState.settings.shift)gameState.settings.shift=false;update();};});
  update();
 }
-function fixInput(){}
+function fixInput(){
+ const kb=$("virtual-keyboard");
+ if(!kb||kb.__weTouchInputBound)return;
+ kb.__weTouchInputBound=true;
+ let activePointer=null;
+ kb.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="touch"&&e.pointerType!=="pen")return;
+  const key=e.target.closest(".key");
+  if(!key)return;
+  activePointer={id:e.pointerId,key};
+ },{passive:true});
+ kb.addEventListener("pointerup",e=>{
+  if(!activePointer||activePointer.id!==e.pointerId)return;
+  const key=activePointer.key;
+  activePointer=null;
+  if(e.target.closest(".key")!==key)return;
+  key.__weIgnoreTouchClick=true;
+  setTimeout(()=>{key.__weIgnoreTouchClick=false;},500);
+  if(key.id==="we-shift"||key.id==="we-caps"){key.onclick?.();return;}
+  if(key.id==="key-SPACE"){window.handleKeyInput(" ");return;}
+  const raw=key.id.slice(4);
+  if(raw==="?123"){window.handleKeyInput("?123");return;}
+  const upper=!!gameState.settings.shift!==!!gameState.settings.capsLock;
+  const ch=/^[A-ZÄÖÜ]$/i.test(raw)?(upper?raw.toUpperCase():raw.toLowerCase()):raw;
+  window.handleKeyInput(ch);
+  if(gameState.settings.shift){
+   gameState.settings.shift=false;
+   $("we-shift")?.classList.remove("active");
+  }
+ },{passive:true});
+ kb.addEventListener("pointercancel",e=>{
+  if(activePointer?.id===e.pointerId)activePointer=null;
+ },{passive:true});
+ kb.addEventListener("click",e=>{
+  const key=e.target.closest(".key");
+  if(key?.__weIgnoreTouchClick){e.preventDefault();e.stopImmediatePropagation();}
+ },true);
+}
 function prestigeTree(){const host=$("we-p-upgrades");if(!host)return;host.innerHTML='<div id="we-prestige-tree"></div>';const t=$("we-prestige-tree"),data=[["p_sp","Imperiale Tinte","+10 % SP",1,10,2,1],["p_gold","Goldmacht","+15 % Gold-SP",2,5,1,2],["p_purple","Purpurmacht","+15 % Purpur-SP",2,5,3,2],["p_start","Reicher Neustart","+250 Start-SP",3,5,1,3],["p_auto","Maschinenwissen","Schnellere Automatik",3,5,3,3],["p_blue","Blaue Krone","Stärkere blaue Boni",4,5,2,3],["p_discount","Königlicher Rabatt","5 % Rabatt",5,5,1,4],["p_goldchance","Goldene Ader","Häufigere Goldzeichen",4,5,3,4],["p_purplechance","Purpurne Ader","Häufigere Purpurzeichen",4,5,2,5],["p_capacity","Königlicher Tintentank","Mehr Tinte nach Prestige",5,5,2,6]];data.forEach(([id,name,desc,cost,max,col,row])=>{const lv=gameState.prestige.upgrades[id]||0,n=document.createElement("div");n.className="we72-node";n.style.gridColumn=col;n.style.gridRow=row;const h=document.createElement("b"),p=document.createElement("p"),small=document.createElement("small");h.textContent=name+" "+lv+"/"+max;p.textContent=desc;small.textContent=lv===max?"MAX":cost*(lv+1)+" Prestige-Punkte";n.append(h,p,small);if(lv<max){const b=document.createElement("button");b.className="btn";b.textContent="Kaufen";b.onclick=()=>{const price=cost*(lv+1);if(gameState.prestige.points<price)return showToast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=price;gameState.prestige.upgrades[id]=lv+1;window.saveGameState();prestigeTree();addPrestigeConnectors();};n.appendChild(b);}t.appendChild(n);});}
 function prestigeMeter(){const sp=gameState.sp||0,gain=Math.floor(Math.sqrt(sp/10000)),next=(gain+1)*(gain+1)*10000,remaining=Math.max(0,next-sp);$("we-p-preview")&&($("we-p-preview").textContent=gain);$("we-p-current")&&($("we-p-current").textContent=Math.floor(sp));let p=$("we72-next");if(!p){p=document.createElement("p");p.id="we72-next";$("we-p-current")?.parentElement?.after(p);}p.textContent="Noch "+remaining.toLocaleString("de-DE")+" SP bis zum nächsten Schritt ("+next.toLocaleString("de-DE")+" SP)";let bar=$("we72-progress");if(!bar){bar=document.createElement("div");bar.id="we72-progress";bar.innerHTML="<span></span>";p.after(bar);}const current=(gain*gain)*10000;bar.firstElementChild.style.width=Math.min(100,Math.max(0,(sp-current)/Math.max(1,next-current)*100))+"%";}
 function addSettings(){const cfg=$("tab-config");if(!cfg)return;if(!$("we72-design")){const b=document.createElement("section");b.id="we72-design";b.className="we72-card";b.innerHTML='<h3>Design</h3><div class="we72-row"><label>Hintergrund</label><select id="we72-theme"><option value="paper">Papier & Salbei</option><option value="dark">Dunkel</option></select></div><div class="we72-row"><label>Farbe der linken Leiste</label><input id="we72-nav" type="color"></div><div class="we72-row"><label>Farbe des Hauptbereichs</label><input id="we72-main" type="color"></div>';cfg.appendChild(b);$("we72-theme").value=gameState.settings.we72ThemeChosen?(gameState.settings.weTheme||"paper"):"paper";$("we72-nav").value=gameState.settings.navColor||"#5b8876";$("we72-main").value=gameState.settings.mainColor||"#f3f0e6";const apply=()=>{document.body.classList.toggle("we-paper",$("we72-theme").value==="paper");document.documentElement.style.setProperty("--we-nav",$("we72-nav").value);document.documentElement.style.setProperty("--we-main",$("we72-main").value);gameState.settings.weTheme=$("we72-theme").value;gameState.settings.navColor=$("we72-nav").value;gameState.settings.mainColor=$("we72-main").value;window.saveGameState();};["we72-theme","we72-nav","we72-main"].forEach(id=>{const changed=()=>{gameState.settings.we72ThemeChosen=true;apply();};$(id).addEventListener("input",changed);$(id).addEventListener("change",changed);});apply();}if(!$("we72-sounds")){const b=document.createElement("section");b.id="we72-sounds";b.className="we72-card";b.innerHTML='<h3>Sounds</h3><div class="we72-row"><label>Hintergrundmusik</label><input type="checkbox" id="we72-music" checked></div><div class="we72-row"><label>Lautstärke</label><input type="range" min="0" max="0.1" step="0.002" id="we72-vol" value="0.025"></div><div class="we72-row"><label>Tastentöne</label><input type="checkbox" id="we72-sfx" checked></div>';cfg.appendChild(b);let ctx=null,gain=null,osc=[],enabled=gameState.settings.musicEnabled!==false,started=false;const start=async()=>{if(!enabled||started)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctx=ctx||new AC();if(ctx.state==="suspended")await ctx.resume();gain=ctx.createGain();gain.gain.value=+(gameState.settings.musicVolume??0.025);gain.connect(ctx.destination);[130.81,164.81,196,261.63].forEach((f,i)=>{const o=ctx.createOscillator(),v=ctx.createGain();o.type="sine";o.frequency.value=f;v.gain.value=[.08,.04,.025,.015][i];o.connect(v);v.connect(gain);o.start();osc.push(o);});started=true;};const stop=()=>{osc.forEach(o=>{try{o.stop();}catch{}});osc=[];gain?.disconnect();gain=null;started=false;};$("we72-music").checked=enabled;$("we72-vol").value=gameState.settings.musicVolume??.025;$("we72-sfx").checked=gameState.settings.sfxEnabled!==false;$("we72-music").onchange=e=>{enabled=e.target.checked;gameState.settings.musicEnabled=enabled;enabled?start():stop();window.saveGameState();};$("we72-vol").oninput=e=>{gameState.settings.musicVolume=+e.target.value;if(gain&&ctx)gain.gain.setTargetAtTime(+e.target.value,ctx.currentTime,.1);window.saveGameState();};$("we72-sfx").onchange=e=>{gameState.settings.sfxEnabled=e.target.checked;window.saveGameState();};const gesture=()=>start();window.addEventListener("pointerdown",gesture,{once:true});window.addEventListener("keydown",gesture,{once:true});window.playClickSound=()=>{if(gameState.settings.sfxEnabled===false)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const c=window.__we72Sfx||(window.__we72Sfx=new AC());if(c.state==="suspended"){c.resume().then(()=>window.playClickSound()).catch(()=>{});return;}const o=c.createOscillator(),v=c.createGain();o.type="sine";o.frequency.value=760;v.gain.setValueAtTime(.03,c.currentTime);v.gain.exponentialRampToValueAtTime(.001,c.currentTime+.04);o.connect(v);v.connect(c.destination);o.start();o.stop(c.currentTime+.045);};}}
