@@ -112,7 +112,7 @@ window.handleKeyInput=function(input){
  if(input!==expected){gameState.stats.errors++;gameState.stats.errorFreeStreak=0;showToast("Falsche Taste – Serie zurückgesetzt.");return;}
  gameState.specialKeyMode=false;if(gameState.settings.shift)gameState.settings.shift=false;gameState.stats.errorFreeStreak++;gameState.stats.bestStreak=Math.max(gameState.stats.bestStreak,gameState.stats.errorFreeStreak);
  if(/[A-ZÄÖÜ]/.test(expected))gameState.stats.uppercaseCorrect++;
- let type=colorAt(gameState.textProgress);if(type!=="gold"&&type!=="purple"&&type!=="blue")type="manual";
+ let type=colorAt(gameState.textProgress);if(type!=="gold"&&type!=="purple"&&type!=="blue")type="manual";if(type==="manual"&&gameState.settings.freeEnabled&&isUpgradePurchased("unlock_free")){const stockKey=expected===" "?"SPACE":expected.toUpperCase();if((gameState.freeStock[stockKey]||0)>0){gameState.freeStock[stockKey]--;type="gold";}}
  if(type==="blue")gameState.blueUntil=Date.now()+5000+(gameState.upgrades.blue_duration||0)*1500;
  executeCharacterWrite(expected,type);
  if(type==="manual"&&/[A-ZÄÖÜ]/.test(expected)&&isUpgradePurchased("case_master")){const b=gameState.upgrades.case_master;gameState.sp+=b;gameState.totalSpEarned+=b;}

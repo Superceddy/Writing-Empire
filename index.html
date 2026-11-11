@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Writing Empire v0.6</title>
+    <title>Writing Empire v0.7.2</title>
     <style>
         :root {
             --bg-dark: #121212;
@@ -355,7 +355,7 @@
 <body>
 
     <header>
-        <div style="font-size: 20px; font-weight: bold;">✒ Writing Empire <span style="font-size:12px; color:var(--text-muted);">v0.6</span></div>
+        <div style="font-size: 20px; font-weight: bold;">✒ Writing Empire <span style="font-size:12px; color:var(--text-muted);">v0.7.2</span></div>
         <div class="sp-display"><span id="global-sp">0</span> SP</div>
     </header>
 
@@ -1099,6 +1099,7 @@ let pressed = e.key;
         // Lokaler Cache + optionale Cloud-Synchronisierung über Supabase.
         function saveGameState() {
             localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
+            localStorage.setItem("writing_empire_v04_saved_at", String(Date.now()));
             if (currentUser && supabaseClient) {
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(saveCloudState, 900);
@@ -1173,9 +1174,24 @@ let pressed = e.key;
             if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
             if(data?.game_state) {
                 const localTime=Number(localStorage.getItem("writing_empire_v04_saved_at") || 0);
+                let localState=null;
+                try { localState=JSON.parse(localStorage.getItem("writing_empire_v04_save") || "null"); } catch(e) {}
                 const cloudState=data.game_state;
+                const cloudTime=Date.parse(data.updated_at || "") || 0;
+                const localChars=localState?.stats?.totalChars || 0;
+                const cloudChars=cloudState?.stats?.totalChars || 0;
+                const localSP=localState?.totalSpEarned || 0;
+                const cloudSP=cloudState?.totalSpEarned || 0;
+                const localHasMore=!localTime && localState && (localChars>cloudChars || (localChars===cloudChars && localSP>cloudSP));
+                if(localState && (localTime>=cloudTime || localHasMore)) {
+                    await saveCloudState();
+                    setAuthStatus("Lokaler Spielstand synchronisiert.");
+                    return;
+                }
                 gameState={...gameState,...cloudState,stats:{...gameState.stats,...(cloudState.stats||{})},settings:{...gameState.settings,...(cloudState.settings||{})}};
-                updateAllDisplays(); buildSkillTreeUI(); localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                updateAllDisplays(); buildSkillTreeUI();
+                localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                localStorage.setItem("writing_empire_v04_saved_at",String(cloudTime || Date.now()));
                 setAuthStatus("Cloud-Spielstand geladen.");
             } else { await saveCloudState(); }
         }
@@ -1197,5 +1213,6 @@ let pressed = e.key;
     </script>
     <script src="writing-empire-v06.js"></script>
     <script src="writing-empire-v07.js"></script>
+    <script src="writing-empire-v072.js"></script>
 </body>
 </html>
