@@ -81,8 +81,8 @@ additions.forEach(s=>{const old=SKILL_TREE.find(x=>x.id===s.id);if(old)Object.as
 SKILL_TREE.forEach(s=>{if(!s.group)s.group=s.color==="purple"?"Purpur":(s.id.indexOf("auto")===0||s.id==="unlock_auto"?"Automatisierung":(s.id.indexOf("free")>=0||s.id.indexOf("gold")>=0||s.id==="unlock_free"?"Gold":"Schreibkunst"));});
 
 function colorAt(i){
- const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3);
- const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2);
+ const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3-(gameState.prestige?.upgrades?.p_purplechance||0)*2);
+ const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2-(gameState.prestige?.upgrades?.p_goldchance||0)*3);
  if(i>=gameState.textProgress&&(i-5)%pEvery===0&&isUpgradePurchased("purple_bonus"))return "purple";
  if(i>=gameState.textProgress&&(i-10)%gEvery===0&&isUpgradePurchased("unlock_free"))return "gold";
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
@@ -144,7 +144,7 @@ window.gameLoop=function(){
  const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===c.toUpperCase());
  if((specific||(isUpgradePurchased("auto_vowels")&&"AEIOU".includes(c.toUpperCase())))&&autoACounter>=1800){autoACounter=0;executeCharacterWrite(c,"auto");updateAllDisplays();saveGameState();return;}
  if(!isUpgradePurchased("unlock_auto"))return;
- const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300);
+ const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300-(gameState.prestige?.upgrades?.p_auto||0)*150);
  if(msCounter>=interval){msCounter=0;executeCharacterWrite(c,"auto");updateAllDisplays();saveGameState();}
 };
 
