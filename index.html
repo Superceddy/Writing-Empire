@@ -1098,13 +1098,25 @@ let pressed = e.key;
 
         // Lokaler Cache + optionale Cloud-Synchronisierung über Supabase.
         function saveGameState() {
-            localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
-            localStorage.setItem("writing_empire_v04_saved_at", String(Date.now()));
+            const now=Date.now();
+            try {
+                localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
+                localStorage.setItem("writing_empire_v04_saved_at", String(now));
+            } catch(e) {
+                console.error("Lokaler Spielstand konnte nicht gespeichert werden",e);
+                setAuthStatus("Lokales Speichern fehlgeschlagen – bitte Browser-Speicher prüfen.");
+            }
             if (currentUser && supabaseClient) {
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(saveCloudState, 900);
             }
         }
+        window.addEventListener("pagehide",function(){
+            try {
+                localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                localStorage.setItem("writing_empire_v04_saved_at",String(Date.now()));
+            } catch(e) { console.error("Spielstand beim Verlassen konnte nicht gesichert werden",e); }
+        });
 
         function loadGameState() {
             let saved = localStorage.getItem("writing_empire_v04_save") || localStorage.getItem("writing_empire_v03_save");
