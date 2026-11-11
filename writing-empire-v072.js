@@ -23,7 +23,7 @@ function addModifiers(){
  if(space){const wrap=document.createElement("div");wrap.id="we72-space-row";wrap.style.cssText="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;flex-wrap:nowrap";space.parentElement.insertBefore(wrap,space);wrap.append(row,space);space.style.width="min(55vw,260px)";}
  sh.onclick=()=>{gameState.settings.shift=!gameState.settings.shift;update();};
  cap.onclick=()=>{gameState.settings.capsLock=!gameState.settings.capsLock;update();};
- const update=()=>{sh.classList.toggle("active",!!gameState.settings.shift);cap.classList.toggle("active",!!gameState.settings.capsLock);let n=$("we-case-state");if(!n){n=document.createElement("div");n.id="we-case-state";row.after(n);}n.textContent="Schreibweise: "+(!!gameState.settings.shift!==!!gameState.settings.capsLock?"GROSS":"klein");};
+ const update=()=>{sh.classList.toggle("active",!!gameState.settings.shift);cap.classList.toggle("active",!!gameState.settings.capsLock);let n=$("we-case-state");if(!n){n=document.createElement("div");n.id="we-case-state";row.after(n);}n.textContent="Schreibweise: "+(!!gameState.settings.shift!==!!gameState.settings.capsLock?"GROSS":"klein");row.after(n);};
  kb.querySelectorAll(".key").forEach(k=>{if(k===space||k===sh||k===cap||k.id==="key-?123")return;k.onclick=()=>{const raw=k.id.slice(4),upper=!!gameState.settings.shift!==!!gameState.settings.capsLock,ch=upper?raw.toUpperCase():raw.toLowerCase();window.handleKeyInput(ch);gameState.settings.shift=false;update();};});
  update();
 }
