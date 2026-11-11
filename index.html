@@ -499,6 +499,7 @@
         let supabaseClient = null;
         let currentUser = null;
         let cloudSaveTimer = null;
+        let cloudLoadPromise = null;
 
         // Systemkonfiguration & Datenmodelle
         const TEXT_TEMPLATES = {
@@ -1184,6 +1185,8 @@ let pressed = e.key;
         }
         async function loadCloudState() {
             if(!currentUser || !supabaseClient) return;
+            if(cloudLoadPromise) return cloudLoadPromise;
+            cloudLoadPromise=(async()=>{
             const {data,error}=await supabaseClient.from("player_saves").select("game_state,updated_at").eq("user_id",currentUser.id).maybeSingle();
             if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
             if(data?.game_state) {
@@ -1196,9 +1199,10 @@ let pressed = e.key;
                 const cloudChars=Number(cloudState?.stats?.totalChars)||0;
                 const localSP=Number(localState?.totalSpEarned)||0;
                 const cloudSP=Number(cloudState?.totalSpEarned)||0;
-                const localAhead=!!localState&&(localChars>cloudChars||(localChars===cloudChars&&localSP>cloudSP));
+                const localProgress=Number(localState?.textProgress)||0,cloudProgress=Number(cloudState?.textProgress)||0;
+                const localAhead=!!localState&&(localChars>cloudChars||(localChars===cloudChars&&localSP>cloudSP)||(localChars===cloudChars&&localSP===cloudSP&&localProgress>cloudProgress));
                 const cloudAhead=cloudChars>localChars||(cloudChars===localChars&&cloudSP>localSP);
-                if(localState&&(localTime>cloudTime||(!cloudTime&&localAhead)||(localTime===cloudTime&&localAhead))) {
+                if(localState&&(localTime>cloudTime||localAhead)) {
                     await saveCloudState();
                     setAuthStatus("Lokaler Spielstand synchronisiert.");
                     return;
@@ -1219,6 +1223,9 @@ let pressed = e.key;
                     setAuthStatus("Lokaler Spielstand synchronisiert.");
                 }
             } else { await saveCloudState(); }
+            })();
+            try { await cloudLoadPromise; }
+            finally { cloudLoadPromise=null; }
         }
         async function saveCloudState() {
             if(!currentUser || !supabaseClient) return;
