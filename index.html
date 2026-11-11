@@ -1115,6 +1115,7 @@ let pressed = e.key;
             }
         }
         window.addEventListener("pagehide",function(){
+            if(window.__weSkipPagehideSave)return;
             try {
                 localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
                 localStorage.setItem("writing_empire_v04_saved_at",String(Date.now()));
