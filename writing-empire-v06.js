@@ -88,6 +88,7 @@ function colorAt(i){
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
  return "";
 }
+window.colorAt=colorAt;
 window.renderPaper=function(){
  const paper=byId("paper");if(!paper)return;paper.innerHTML="";
  gameState.history.forEach(item=>{const x=document.createElement("span");x.textContent=item.char;x.className=item.type==="gold"?"char-gold":item.type==="purple"?"char-purple":item.type==="blue"?"char-blue":"char-normal";paper.appendChild(x);});
