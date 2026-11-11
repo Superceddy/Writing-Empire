@@ -148,6 +148,19 @@ window.gameLoop=function(){
  const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300-(gameState.prestige?.upgrades?.p_auto||0)*150);
  if(msCounter>=interval){msCounter=0;executeCharacterWrite(c,"auto");updateAllDisplays();saveGameState();}
 };
+window.getAutoCooldownMs=function(){
+ const text=getCurrentTextString(),ch=text[gameState.textProgress];
+ if(ch===undefined||!gameState.settings.autoEnabled)return null;
+ if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled)return 0;
+ if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return null;
+ const ids=["auto_a","auto_e","auto_s","auto_t"];
+ const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===ch.toUpperCase());
+ if(specific||(isUpgradePurchased("auto_vowels")&&"AEIOU".includes(ch.toUpperCase())))return Math.max(0,1800-autoACounter);
+ if(!isUpgradePurchased("unlock_auto"))return null;
+ const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300-(gameState.prestige?.upgrades?.p_auto||0)*150);
+ return Math.max(0,interval-msCounter);
+};
+
 
 /* Grouped talents show live level, next level and actual prerequisites */
 window.buyUpgrade=function(id,cost){const skill=SKILL_TREE.find(s=>s.id===id);if(!skill)return;const lvl=gameState.upgrades[id]||0;if(lvl>=skill.maxLevel)return showToast("Bereits auf Maximalstufe.");if((skill.requires||[]).some(r=>(gameState.upgrades[r]||0)<1))return showToast("Voraussetzung fehlt.");if(gameState.sp<cost)return showToast("Nicht genug SP.");gameState.sp-=cost;gameState.upgrades[id]=lvl+1;checkAchievements();buildSkillTreeUI();updateAllDisplays();saveGameState();showToast("Upgrade erworben: "+skill.label);};
