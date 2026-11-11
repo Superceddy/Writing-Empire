@@ -156,7 +156,7 @@ window.buildSkillTreeUI=function(){
  const sec=document.createElement("section");sec.className="skill-group";const h=document.createElement("h3");h.textContent=g;sec.appendChild(h);const row=document.createElement("div");row.className="skill-row";
  SKILL_TREE.filter(s=>(s.group||"Weitere Talente")===g).forEach(s=>{
  const lvl=gameState.upgrades[s.id]||0,cost=Math.round(s.cost*Math.pow(1.65,lvl)),missing=(s.requires||[]).filter(id=>(gameState.upgrades[id]||0)<1),node=document.createElement("div");
- node.className="skill-node "+(lvl>=s.maxLevel?"purchased":missing.length?"locked":"available");
+ node.className="skill-node "+(lvl>=s.maxLevel?"purchased":missing.length?"locked":"available");node.dataset.skillId=s.id;
  const req=missing.map(id=>{const x=SKILL_TREE.find(y=>y.id===id);return x?x.label:id;}).join(", ");
  node.innerHTML="<h4>"+s.label+" ("+lvl+"/"+s.maxLevel+")</h4><p>"+s.desc+"</p><span class='preview'>Aktuell: Stufe "+lvl+" · Danach: "+Math.min(s.maxLevel,lvl+1)+"</span><span class='cost'>"+(lvl>=s.maxLevel?"MAXSTUFE":cost+" SP")+"</span>"+(missing.length?"<p class='preview'>Benötigt: "+req+"</p>":"");
  if(lvl<s.maxLevel&&!missing.length){node.tabIndex=0;node.onclick=()=>buyUpgrade(s.id,cost);node.onkeydown=e=>{if(e.key==="Enter")buyUpgrade(s.id,cost);};}
