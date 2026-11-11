@@ -18,3 +18,7 @@ drop policy if exists "Admins can delete public texts" on public.public_texts;
 create policy "Admins can delete public texts" on public.public_texts
   for delete to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- API permissions; row-level security above still restricts who may publish/delete.
+grant select on public.public_texts to anon, authenticated;
+grant insert, delete on public.public_texts to authenticated;
