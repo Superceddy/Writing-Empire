@@ -11,6 +11,7 @@ function addTexts(){extraTexts.forEach(([id,title,text])=>{TEXT_TEMPLATES[id]=te
 function fixUpgrades(){SKILL_TREE.forEach(s=>{if(s.id==="purple_bonus")s.requires=["unlock_free"];if(s.id==="purple_power"||s.id==="purple_frequency")s.requires=["purple_bonus"];if(s.id==="red_rare"){s.group="Schreibkunst";s.label="Buchstabenpräzision";}if(s.id==="green_focus")s.label="Serienpräzision";});}
 function addModifiers(){
  const kb=$("virtual-keyboard"),space=$("key-SPACE");if(!kb||!space||$("we72-space-row"))return;
+ if(!kb.__weKeyHighlight){kb.__weKeyHighlight=true;kb.addEventListener("click",e=>{const key=e.target.closest(".key");if(!key)return;key.classList.add("pressed");clearTimeout(key.__wePressTimer);key.__wePressTimer=setTimeout(()=>key.classList.remove("pressed"),130);});}
  const row=document.createElement("div");row.id="we72-mods";row.style.cssText="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap";
  const make=(id,label)=>{const x=document.createElement("button");x.type="button";x.id=id;x.className="key we-mod-key";x.textContent=label;return x;};
  const sh=make("we-shift","⇧ Shift"),cap=make("we-caps","⇪ Caps Lock");
