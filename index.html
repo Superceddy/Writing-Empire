@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Writing Empire v0.4</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --surface-dark: #1e1e1e;
+            --accent-gold: #ffd700;
+            --accent-purple: #bb86fc;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            --border-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--surface-dark);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .sp-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        nav {
+            background-color: var(--surface-dark);
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid var(--border-color);
+            padding: 10px 0;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 20px;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav button:hover, nav button.active {
+            color: var(--text-main);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        nav button.active {
+            border-left: 4px solid var(--accent-purple);
+            padding-left: 16px;
+            color: var(--accent-purple);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+            height: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Schreib-Ansicht */
+        .paper-container {
+            background: #ffffff;
+            color: #111111;
+            padding: 30px;
+            border-radius: 8px;
+            min-height: 250px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .paper-container.font-small { font-size: 14px; }
+        .paper-container.font-standard { font-size: 18px; }
+        .paper-container.font-large { font-size: 24px; }
+
+        /* Buchstaben-Farben */
+        .char-normal { color: #111111; }
+        .char-gold { color: #cc9900; font-weight: bold; text-shadow: 0 0 2px rgba(255,215,0,0.5); }
+        .char-purple { color: #8a2be2; font-weight: bold; }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(10, 15fr);
+            gap: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .key {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-main);
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            transition: background 0.1s;
+        }
+
+        .key:active {
+            background: #444;
+        }
+
+        .key-sub-gold {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 9px;
+            color: var(--accent-gold);
+            font-weight: normal;
+        }
+
+        .key-sub-grey {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 9px;
+            color: #777777;
+            font-weight: normal;
+        }
+
+        .space-key {
+            grid-column: span 10;
+            height: 45px;
+            background: #333;
+        }
+
+        /* Skilltree */
+        .skilltree-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            padding: 20px;
+            background: #151515;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .skill-row {
+            display: flex;
+            justify-content: space-around;
+            position: relative;
+        }
+
+        .skill-node {
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 12px;
+            width: 200px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .skill-node.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .skill-node.available {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px rgba(187, 134, 252, 0.2);
+        }
+
+        .skill-node.purchased {
+            border-color: var(--accent-gold);
+            background: #2d2815;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+        }
+
+        .skill-node h4 { margin-bottom: 5px; font-size: 14px; }
+        .skill-node p { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+        .skill-node .cost { font-size: 12px; color: var(--accent-gold); font-weight: bold; }
+
+        /* Erfolge Tab */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 15px;
+        }
+
+        .achievement-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.3s;
+            opacity: 0.5;
+        }
+
+        .achievement-card.unlocked {
+            opacity: 1;
+            border-color: var(--accent-gold);
+            background: linear-gradient(135deg, #1e1e1e 0%, #2a2510 100%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .achievement-card h4 { font-size: 16px; color: #fff; }
+        .achievement-card.unlocked h4 { color: var(--accent-gold); }
+        .achievement-card p { font-size: 13px; color: var(--text-muted); }
+        .achievement-card .progress-bar {
+            background: #333;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .achievement-card .progress-fill {
+            background: var(--accent-purple);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .achievement-card.unlocked .progress-fill {
+            background: var(--accent-gold);
+        }
+
+        /* Allgemeines UI-Design */
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px;}
+        input, select, textarea {
+            background: #2a2a2a; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;
+        }
+        button.btn {
+            background: var(--accent-purple); color: #000; border: none; padding: 10px 15px; border-radius: 4px;
+            font-weight: bold; cursor: pointer; transition: opacity 0.2s;
+        }
+        button.btn:hover { opacity: 0.9; }
+        
+        .switch-container {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1e1e1e; padding: 12px; border-radius: 6px; margin-bottom: 10px;
+        }
+
+        /* Verstecktes Admin Panel */
+        #admin-panel {
+            display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%;
+            background: #1a1a1a; border: 3px solid red; z-index: 1000; padding: 20px;
+            border-radius: 12px; overflow-y: auto; box-shadow: 0 0 30px rgba(255,0,0,0.5);
+        }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }
+
+        .char-next { background: #ffe45c; color: #111 !important; border-radius: 3px; font-weight: 800; box-shadow: 0 0 8px rgba(255,220,50,.65); }
+        .key.next-key { outline: 3px solid #ffe45c; background: #51451a; color: #ffe45c; }
+        .key.auto-key { border-color: var(--accent-purple); box-shadow: 0 0 8px rgba(187,134,252,.45); }
+        .auth-card { background:#1e1e1e; padding:16px; border:1px solid #444; border-radius:8px; max-width:520px; margin-bottom:18px; }
+        .auth-card input { width:100%; padding:11px; font-size:16px; }
+        .auth-actions { display:flex; flex-wrap:wrap; gap:8px; }
+        .auth-status { color:var(--accent-gold); margin:8px 0; font-size:14px; }
+        .skill-row { gap:14px; flex-wrap:wrap; }
+        .skill-node { min-width:180px; flex:1 1 180px; }
+        #admin-panel { left:3%; width:94%; top:4%; height:92%; }
+        #admin-panel button { min-height:44px; touch-action:manipulation; }
+        @media (max-width:760px) {
+            body { height:auto; min-height:100vh; overflow:auto; }
+            .main-layout { flex-direction:column; overflow:visible; }
+            nav { width:100%; flex-direction:row; overflow-x:auto; border-right:0; border-bottom:2px solid var(--border-color); padding:4px; }
+            nav button { flex:0 0 auto; padding:10px 12px; font-size:13px; }
+            nav button.active { border-left:0; border-bottom:3px solid var(--accent-purple); padding-left:12px; }
+            .content-area { overflow:visible; padding:12px; }
+            .tab-content { height:auto; }
+            .keyboard { grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; padding:7px; }
+            .key { height:48px; font-size:16px; }
+            .space-key { grid-column:span 5; }
+            .paper-container { padding:16px; max-height:42vh; }
+            header { padding:12px; }
+            #admin-panel { padding:12px; }
+        }
+
+        /* Notification Toast */
+        #toast {
+            position: fixed; bottom: 20px; right: 20px; background: var(--accent-gold); color: #000;
+            padding: 15px 25px; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+
+        /* Dropdown Selektor für Vorlagen */
+        .template-select { margin-bottom: 15px; width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="font-size: 20px; font-weight: bold;">✒ Writing Empire <span style="font-size:12px; color:var(--text-muted);">v0.4</span></div>
+        <div class="sp-display"><span id="global-sp">0</span> SP</div>
+    </header>
+
+    <div class="main-layout">
+        <nav>
+            <button class="nav-btn active" onclick="switchTab('tab-schreiben', this)">📝 Schreiben</button>
+            <button class="nav-btn" onclick="switchTab('tab-skilltree', this)">🌳 Talentbaum</button>
+            <button class="nav-btn" onclick="switchTab('tab-erfolge', this)">🏆 Erfolge</button>
+            <button class="nav-btn" onclick="switchTab('tab-stats', this)">📊 Statistiken</button>
+            <button class="nav-btn" onclick="switchTab('tab-config', this)">⚙ Einstellungen</button>
+        </nav>
+
+        <div class="content-area">
+            <div id="tab-schreiben" class="tab-content active">
+                <div class="form-group">
+                    <label for="template-dropdown">Vorlage wählen:</label>
+                    <select id="template-dropdown" class="template-select" onchange="loadTemplate()">
+                        <option value="maerchen">Märchen: Der goldene Buchstabe</option>
+                        <option value="fantasy">Fantasy: Das Erwachen des Imperiums</option>
+                        <option value="science">Wissenschaft: Die Automatisierung des Geistes</option>
+                    </select>
+                    <button class="btn" style="background:#555; color:#fff; width:fit-content; padding: 4px 10px; font-size:12px;" onclick="resetCurrentText()">Text zurücksetzen</button>
+                </div>
+
+                <div class="paper-container font-standard" id="paper"></div>
+
+                <div class="keyboard" id="virtual-keyboard"></div>
+            </div>
+
+            <div id="tab-skilltree" class="tab-content">
+                <h2>Talentbaum</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">Schalte Pfade frei, um Automatisierung und Generatoren zu aktivieren.</p>
+                <div class="skilltree-container" id="skilltree-container">
+                </div>
+            </div>
+
+            <div id="tab-erfolge" class="tab-content">
+                <h2>Erfolge & Auszeichnungen</h2>
+                <div class="achievements-grid" id="achievements-display">
+                </div>
+            </div>
+
+            <div id="tab-stats" class="tab-content">
+                <h2>Imperiums-Statistiken</h2>
+                <div style="background:#1e1e1e; padding:20px; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
+                    <div>Geschriebene Buchstaben insgesamt: <strong id="stat-total-chars">0</strong></div>
+                    <div>Manuell getippte Buchstaben: <strong id="stat-manual-chars">0</strong></div>
+                    <div>Automatisch generierte Buchstaben: <strong id="stat-auto-chars">0</strong></div>
+                    <div>Eingesetzte goldene Freibuchstaben: <strong id="stat-gold-chars">0</strong></div>
+                    <div>Verdiene Schreibpunkte (Lebenszeit): <strong id="stat-total-sp">0</strong></div>
+                    <div>Abgeschlossene Texte: <strong id="stat-finished-texts">0</strong></div>
+                </div>
+            </div>
+
+            <div id="tab-config" class="tab-content">
+                <h2>Einstellungen & Optionen</h2>
+                
+                <button class="btn" style="background:#733;color:white;margin-bottom:14px" onclick="triggerAdminAccess()">Admin-Panel öffnen</button>
+                <h3 style="margin-bottom:10px; font-size:16px;">Schalter-Zentralen</h3>
+                <div class="switch-container">
+                    <span>Maschinen-Automatisierung erlauben</span>
+                    <input type="checkbox" id="switch-auto" onchange="toggleSetting('autoEnabled', this.checked)">
+                </div>
+                <div class="switch-container">
+                    <span>Kostenlose Gold-Buchstaben automatisch nutzen</span>
+                    <input type="checkbox" id="switch-free" onchange="toggleSetting('freeEnabled', this.checked)">
+                </div>
+
+                <h3 style="margin-top:20px; margin-bottom:10px; font-size:16px;">Eigene Texte verwalten</h3>
+                <div style="background:#1e1e1e; padding:15px; border-radius:8px; margin-bottom:20px;">
+                    <div class="form-group">
+                        <label>Titel:</label>
+                        <input type="text" id="custom-title" placeholder="Mein Meisterwerk">
+                    </div>
+                    <div class="form-group">
+                        <label>Inhalt:</label>
+                        <textarea id="custom-content" rows="4" placeholder="Schreibe hier den Text, den du freispielen möchtest..."></textarea>
+                    </div>
+                    <button class="btn" onclick="addCustomText()">Text hinzufügen</button>
+                </div>
+
+                <h3 style="margin-bottom:10px; font-size:16px;">Anzeige & Sound</h3>
+                <div class="switch-container">
+                    <span>Schreibmaschinensounds</span>
+                    <input type="checkbox" id="setting-sound" checked onchange="toggleSetting('sound', this.checked)">
+                </div>
+                <div class="form-group">
+                    <label>Schriftgröße im Papier:</label>
+                    <select onchange="changeFontSize(this.value)" id="setting-fontsize">
+                        <option value="font-small">Klein</option>
+                        <option value="font-standard" selected>Standard</option>
+                        <option value="font-large">Groß</option>
+                    </select>
+                </div>
+
+                <h3 style="margin-top:20px; margin-bottom:10px; font-size:16px;">Konto & Cloud-Spielstand</h3>
+                <div class="auth-card">
+                    <p>Mit einem Konto wird dein Spielstand über Supabase synchronisiert und kann auf anderen Geräten geladen werden.</p>
+                    <div class="form-group"><label for="auth-email">E-Mail</label><input id="auth-email" type="email" autocomplete="email" placeholder="name@beispiel.de"></div>
+                    <div class="form-group"><label for="auth-password">Passwort</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="Mindestens 6 Zeichen"></div>
+                    <div class="auth-actions">
+                        <button class="btn" onclick="signUp()">Registrieren</button>
+                        <button class="btn" onclick="signIn()">Anmelden</button>
+                        <button class="btn" style="background:#555;color:white" onclick="signOut()">Abmelden</button>
+                    </div>
+                    <div id="auth-status" class="auth-status">Nicht angemeldet – lokaler Spielstand aktiv.</div>
+                    <p style="font-size:12px;color:var(--text-muted)">Hinweis: Supabase-Projekt-URL und öffentlicher anon/publishable Key müssen einmal in der Datei eingetragen werden. Niemals den service_role-Key verwenden.</p>
+                </div>
+                <h3 style="margin-top:20px; margin-bottom:10px; font-size:16px;">Lokaler Spielstand</h3>
+                <button class="btn" style="background:#cc0000; color:#fff;" onclick="clearSavegame()">Spielstand auf diesem Gerät löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <div style="display:flex; justify-content:between; align-items:center; border-bottom:2px solid red; padding-bottom:10px;">
+            <h2 style="color:red; margin:0;">🛠 SECRET ADMIN PANEL 🛠</h2>
+            <button class="btn" style="background:#444; color:#fff;" onclick="closeAdmin()">Schließen</button>
+        </div>
+        <div class="admin-grid">
+            <button class="btn" style="background:green;" onclick="adminAddSP(1000)">+ 1.000 SP</button>
+            <button class="btn" style="background:green;" onclick="adminAddSP(100000)">+ 100.000 SP</button>
+            <button class="btn" style="background:darkred;" onclick="adminAddSP(-5000)">- 5.000 SP</button>
+            <button class="btn" style="background:orange; color:black;" onclick="adminGrantAllFreeChars(10)">+10 alle Freibuchstaben</button>
+            <button class="btn" style="background:purple; color:white;" onclick="adminBuyAllUpgrades()">Alle Upgrades freischalten</button>
+            <button class="btn" style="background:blue; color:white;" onclick="adminUnlockAllAchievements()">Alle Erfolge freischalten</button>
+            <button class="btn" style="background:#555;color:white" onclick="adminResetProgress()">Textfortschritt zurücksetzen</button>
+            <button class="btn" style="background:#666;" onclick="console.log(gameState)">State in Konsole loggen</button>
+        </div>
+    </div>
+
+    <div id="toast">Erfolg freigeschaltet!</div>
+
+    <audio id="audio-click" src="data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YVBAAAAA/f8AAP7/AAD9/wAA/v8AAP3/AAD+/wAA/f8AAP7/AAD9/wAA/v8AAP3/AAD+/wAA/f8AAP7/AAD9/wAA/v8AAP3/AAD+/wAA" preload="auto"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase: Werte nach Erstellung des Projekts hier eintragen.
+        const SUPABASE_URL = "HIER_SUPABASE_PROJECT_URL_EINTRAGEN";
+        const SUPABASE_ANON_KEY = "HIER_SUPABASE_ANON_PUBLIC_KEY_EINTRAGEN";
+        let supabaseClient = null;
+        let currentUser = null;
+        let cloudSaveTimer = null;
+
+        // Systemkonfiguration & Datenmodelle
+        const TEXT_TEMPLATES = {
+            maerchen: "Es war einmal ein kleiner, einsamer Buchstabe, der lebte in einem tiefen, dunklen Tintenfass. Eines Tages beschloss er, die Welt zu bereisen. Er kletterte am Rand empor und sprang direkt auf ein schneeweißes Blatt Papier. Dort traf er andere Zeichen und gemeinsam gründeten sie das mächtige Writing Empire.",
+            fantasy: "Die Trommeln des Schicksals hallten durch das zerbrochene Tal von Scriptoria. Uralte Maschinen, angetrieben von reinem Glyphenstaub, erwachten aus ihrem jahrtausendelangen Schlaf. Jeder geschriebene Satz brach ein weiteres Siegel des dunklen Lords der Grammatikfreiheit.",
+            science: "Die kybernetische Schnittstelle verarbeitete einhundert Terabyte Textdaten pro Sekunde. Menschlicher Geist und neuronale Automatisierung verschmolzen zu einer perfekten Einheit. Das Imperium expandierte nicht mehr durch Schwerter, sondern durch die fundamentale Macht der strukturierten Algorithmen."
+        };
+
+        const SKILL_TREE = [
+            { id:"base_click", label:"Präzisionsfeder", desc:"+1 SP pro manuellem Zeichen je Stufe.", cost:15, maxLevel:8, row:0, requires:[], color:"gold" },
+            { id:"unlock_free", label:"Tintentank", desc:"Schaltet goldene Gratiszeichen frei.", cost:150, maxLevel:1, row:0, requires:["base_click"] },
+            { id:"case_master", label:"Groß-/Kleinschreibmeister", desc:"Korrekte Groß-/Kleinschreibung gibt zusätzliche SP.", cost:250, maxLevel:5, row:1, requires:["base_click"], color:"purple" },
+            { id:"vowel_power", label:"Vokal-Verstärker", desc:"Mehr Gratis-Fortschritt für Vokale (A, E, I, O, U).", cost:350, maxLevel:5, row:1, requires:["unlock_free"] },
+            { id:"consonant_power", label:"Konsonanten-Verstärker", desc:"Mehr Gratis-Fortschritt für Konsonanten.", cost:400, maxLevel:5, row:1, requires:["unlock_free"] },
+            { id:"free_speed", label:"Schnelllader", desc:"Benötigt weniger Anschläge für Gratiszeichen.", cost:500, maxLevel:4, row:2, requires:["unlock_free"] },
+            { id:"unlock_auto", label:"Dampf-Schreibmaschine", desc:"Schaltet die allgemeine Automatisierung frei.", cost:900, maxLevel:1, row:2, requires:["unlock_free"] },
+            { id:"auto_a", label:"Automatik: A", desc:"Schreibt automatisch ein nächstes A, sobald es an der Reihe ist.", cost:1200, maxLevel:1, row:3, requires:["unlock_auto"], color:"purple" },
+            { id:"auto_speed", label:"Zahnrad-Getriebe", desc:"Beschleunigt die allgemeine Automatisierung.", cost:1600, maxLevel:5, row:3, requires:["unlock_auto"] },
+            { id:"keyboard_hint", label:"Vorausschauende Tastatur", desc:"Markiert die benötigte Taste auf der virtuellen Tastatur.", cost:700, maxLevel:1, row:2, requires:["base_click"] },
+            { id:"purple_bonus", label:"Königspurpur", desc:"Jeder 5. manuelle Buchstabe bringt +5 Bonus-SP.", cost:2200, maxLevel:1, row:4, requires:["auto_speed"], color:"purple" },
+            { id:"purple_power", label:"Purpur-Resonanz", desc:"Erhöht den Bonus lilafarbener Zeichen um +2 je Stufe.", cost:3200, maxLevel:5, row:4, requires:["purple_bonus"], color:"purple" }
+        ];
+
+        const ACHIEVEMENTS = [
+            { id: "first_char", name: "Erster Funke", desc: "Den allerersten Buchstaben geschrieben. Belohnung: 1 SP.", target: 1, type: "total_chars", reward: 1 },
+            { id: "chars_100", name: "Fleißiger Schreiber", desc: "100 Buchstaben verfasst.", target: 100, type: "total_chars" },
+            { id: "chars_1000", name: "Wortakrobat", desc: "1.000 Buchstaben verfasst.", target: 1000, type: "total_chars" },
+            { id: "chars_10000", name: "Chronist des Reiches", desc: "10.000 Buchstaben verfasst.", target: 10000, type: "total_chars" },
+            { id: "sp_100", name: "Kleine Kasse", desc: "100 Schreibpunkte verdient.", target: 100, type: "total_sp" },
+            { id: "sp_10000", name: "Wohlstand", desc: "10.000 Schreibpunkte verdient.", target: 10000, type: "total_sp" },
+            { id: "first_upgrade", name: "Evolution", desc: "Das allererste Upgrade im Talentbaum erworben.", target: 1, type: "upgrades_bought" },
+            { id: "unlock_auto_acc", name: "Industrielle Revolution", desc: "Automatisierte Generierung freigeschaltet.", target: 1, type: "auto_unlocked" },
+            { id: "text_1", name: "Das erste Werk", desc: "Einen vollständigen Text abgeschlossen.", target: 1, type: "texts_finished" },
+            { id: "text_10", name: "Bibliothekar", desc: "10 Texte erfolgreich beendet.", target: 10, type: "texts_finished" },
+            { id:"chars_500", name:"Wortschmied", desc:"500 Zeichen geschrieben.", target:500, type:"total_chars" },
+            { id:"chars_5000", name:"Tintenmeister", desc:"5.000 Zeichen geschrieben.", target:5000, type:"total_chars" },
+            { id:"sp_1000", name:"Goldene Feder", desc:"1.000 SP insgesamt verdient.", target:1000, type:"total_sp" },
+            { id:"sp_50000", name:"Imperialer Reichtum", desc:"50.000 SP insgesamt verdient.", target:50000, type:"total_sp" },
+            { id:"upgrade_5", name:"Forscher", desc:"5 Upgrade-Stufen gekauft.", target:5, type:"upgrades_bought" },
+            { id:"upgrade_20", name:"Ingenieur", desc:"20 Upgrade-Stufen gekauft.", target:20, type:"upgrades_bought" },
+            { id:"auto_100", name:"Maschinenfleiß", desc:"100 Zeichen automatisch geschrieben.", target:100, type:"auto_chars" },
+            { id:"gold_100", name:"Goldlager", desc:"100 goldene Zeichen eingesetzt.", target:100, type:"gold_chars" },
+            { id:"text_5", name:"Geschichtenerzähler", desc:"5 Texte abgeschlossen.", target:5, type:"texts_finished" }
+        ];
+
+        // Globaler Spielzustand (GameState)
+        let gameState = {
+            sp: 0,
+            totalSpEarned: 0,
+            textProgress: 0, // Index des aktuellen Zeichens in der Vorlage
+            currentTemplateKey: "maerchen",
+            history: [], // Speichert {char: string, type: 'manual'|'auto'|'gold'|'purple'}
+            freeStock: {}, // Lagerbestände für goldene Tasten: { 'A': 3, ... }
+            freeProgress: {}, // Fortschritt bis zum nächsten Gold-Buchstabe: { 'A': 2, ... }
+            upgrades: {}, // Gekaufte Stufen: { id: level }
+            achievementsUnlocked: [],
+            stats: {
+                totalChars: 0,
+                manualChars: 0,
+                autoChars: 0,
+                goldChars: 0,
+                textsFinished: 0
+            },
+            settings: {
+                autoEnabled: true,
+                freeEnabled: true,
+                sound: true,
+                fontSize: "font-standard"
+            }
+        };
+
+        const KEYBOARD_LAYOUT = ["Q","W","E","R","T","Z","U","I","O","P","A","S","D","F","G","H","J","K","L","Y","X","C","V","B","N","M",",",".","!","?123"];
+        let adminBuffer = "";
+
+        // Initialisierung
+        window.onload = function() {
+            initKeyboard();
+            loadGameState();
+            initSupabase();
+            buildSkillTreeUI();
+            updateAllDisplays();
+            
+            // Start des GameLoops (Automatisierung)
+            setInterval(gameLoop, 100);
+
+            // Abfangen von realen Tastatureingaben
+            window.addEventListener("keydown", handleRealKeyDown);
+        };
+
+        function initKeyboard() {
+            const kb = document.getElementById("virtual-keyboard");
+            kb.innerHTML = "";
+            KEYBOARD_LAYOUT.forEach(key => {
+                const btn = document.createElement("div");
+                btn.className = "key";
+                btn.id = `key-${key}`;
+                btn.innerHTML = `${key}<span class="key-sub-gold" id="sub-gold-${key}"></span><span class="key-sub-grey" id="sub-grey-${key}"></span>`;
+                btn.onclick = () => {
+                    const expected = getCurrentTextString()[gameState.textProgress];
+                    const chosen = key === "?123" ? expected : (/[A-Z]/.test(key) && expected && expected.toUpperCase() === key ? expected : key);
+                    handleKeyInput(chosen);
+                };
+                kb.appendChild(btn);
+            });
+            // Spacebar
+            const space = document.createElement("div");
+            space.className = "key space-key";
+            space.id = "key-SPACE";
+            space.innerText = "LEERZEICHEN";
+            space.onclick = () => handleKeyInput(" ");
+            kb.appendChild(space);
+        }
+
+        // Haupt-Verarbeitungsschleife für Eingaben
+        function handleKeyInput(inputChar) {
+            const targetText = getCurrentTextString();
+            if (gameState.textProgress >= targetText.length) {
+                finishText();
+                return;
+            }
+
+            let expectedChar = targetText[gameState.textProgress];
+            let cleanExpected = expectedChar === " " ? "SPACE" : expectedChar;
+            let cleanInput = inputChar === " " ? "SPACE" : inputChar;
+            const isSpecial = !/[A-Za-z0-9 .,!?]/.test(expectedChar);
+            if (inputChar === "?123") cleanInput = "?123";
+            if (isSpecial && inputChar === expectedChar) cleanInput = expectedChar;
+
+            // PRÜFUNG: Kostenloser automatischer Goldeinsatz aktiv?
+            if (gameState.settings.freeEnabled && isUpgradePurchased("unlock_free")) {
+                let nextExpectedRaw = expectedChar === " " ? "SPACE" : expectedChar;
+                
+                if (gameState.freeStock[nextExpectedRaw] > 0 && inputChar === expectedChar) {
+                    // Verwende automatisch goldenen Freibuchstaben an korrekter Position
+                    executeCharacterWrite(expectedChar, 'gold');
+                    gameState.freeStock[nextExpectedRaw]--;
+                    playClickSound();
+                    updateAllDisplays();
+                    saveGameState();
+                    return;
+                }
+            }
+
+            // Normaler manueller Abgleich
+            if (cleanInput === cleanExpected || (cleanExpected === "?123" && !/[A-Za-z0-9 .,!?]/.test(expectedChar))) {
+                let writeType = 'manual';
+                
+                // Lilafarbener Bonus?
+                if (isUpgradePurchased("purple_bonus") && (gameState.stats.manualChars + 1) % 5 === 0) {
+                    writeType = 'purple';
+                }
+
+                executeCharacterWrite(expectedChar, writeType);
+                if (writeType === 'manual' && /[A-Za-z]/.test(expectedChar) && inputChar === expectedChar && isUpgradePurchased("case_master")) {
+                    const bonus = gameState.upgrades["case_master"];
+                    gameState.sp += bonus;
+                    gameState.totalSpEarned += bonus;
+                }
+                
+                // Fortschritt für künftige Freibuchstaben aufbauen (falls freigeschaltet)
+                if (isUpgradePurchased("unlock_free") && cleanInput !== "SPACE") {
+                    if (!gameState.freeProgress[cleanInput]) gameState.freeProgress[cleanInput] = 0;
+                    const isVowel = "AEIOU".includes(cleanInput.toUpperCase());
+                    const progressBoost = isVowel ? (gameState.upgrades["vowel_power"] || 0) : (gameState.upgrades["consonant_power"] || 0);
+                    gameState.freeProgress[cleanInput] += 1 + progressBoost;
+                    
+                    let threshold = 6 - (gameState.upgrades["free_speed"] || 0);
+                    if (threshold < 2) threshold = 2;
+
+                    if (gameState.freeProgress[cleanInput] >= threshold) {
+                        if (!gameState.freeStock[cleanInput]) gameState.freeStock[cleanInput] = 0;
+                        gameState.freeStock[cleanInput]++;
+                        gameState.freeProgress[cleanInput] = 0;
+                    }
+                }
+
+                playClickSound();
+                updateAllDisplays();
+                saveGameState();
+            }
+        }
+
+        function executeCharacterWrite(char, type) {
+            gameState.history.push({ char: char, type: type });
+            gameState.textProgress++;
+            
+            // Statistiken hochzählen
+            gameState.stats.totalChars++;
+            if (type === 'manual' || type === 'purple') gameState.stats.manualChars++;
+            if (type === 'auto') gameState.stats.autoChars++;
+            if (type === 'gold') gameState.stats.goldChars++;
+
+            // SP Berechnung
+            let spGain = 1;
+            let baseClickLvl = gameState.upgrades["base_click"] || 0;
+            
+            if (type === 'manual' || type === 'purple') {
+                spGain += baseClickLvl;
+            }
+            if (type === 'purple') {
+                spGain += 5 + 2 * (gameState.upgrades["purple_power"] || 0);
+            }
+            if (type === 'manual' && isUpgradePurchased("case_master")) {
+                // Bonus wird beim echten Tastendruck separat in handleKeyInput berechnet.
+            }
+
+            gameState.sp += spGain;
+            gameState.totalSpEarned += spGain;
+
+            checkAchievements();
+            
+            const targetText = getCurrentTextString();
+            if (gameState.textProgress >= targetText.length) {
+                finishText();
+            }
+        }
+
+        function getCurrentTextString() {
+            return TEXT_TEMPLATES[gameState.currentTemplateKey] || "";
+        }
+
+        function finishText() {
+            gameState.stats.textsFinished++;
+            showToast("📖 Text erfolgreich abgeschlossen! +50 Bonus-SP");
+            gameState.sp += 50;
+            gameState.totalSpEarned += 50;
+            resetCurrentText();
+        }
+
+        function resetCurrentText() {
+            gameState.textProgress = 0;
+            gameState.history = [];
+            updateAllDisplays();
+            saveGameState();
+        }
+
+        // Render-Logik für das digitale Papier (Garantiert Farberhalt nach Neuladen)
+        function renderPaper() {
+            const paper = document.getElementById("paper");
+            paper.innerHTML = "";
+
+            // Vorhandene geschriebene Historie aufbauen
+            gameState.history.forEach(item => {
+                const span = document.createElement("span");
+                span.textContent = item.char;
+                if (item.type === 'gold') span.className = "char-gold";
+                else if (item.type === 'purple') span.className = "char-purple";
+                else span.className = "char-normal";
+                paper.appendChild(span);
+            });
+
+            // Resttext: nur das nächste erwartete Zeichen wird gelb markiert.
+            const targetText = getCurrentTextString();
+            if (gameState.textProgress < targetText.length) {
+                const next = document.createElement("span");
+                next.className = "char-next";
+                next.textContent = targetText[gameState.textProgress];
+                paper.appendChild(next);
+                const rest = document.createElement("span");
+                rest.style.color = "#aaaaaa";
+                rest.textContent = targetText.substring(gameState.textProgress + 1);
+                paper.appendChild(rest);
+            }
+            updateNextKeyboardKey();
+        }
+
+        function updateNextKeyboardKey() {
+            document.querySelectorAll(".key.next-key").forEach(el => el.classList.remove("next-key"));
+            document.querySelectorAll(".key.auto-key").forEach(el => el.classList.remove("auto-key"));
+            if (!isUpgradePurchased("keyboard_hint")) return;
+            const ch = getCurrentTextString()[gameState.textProgress];
+            if (!ch) return;
+            let key = ch === " " ? "SPACE" : ch.toUpperCase();
+            if (!document.getElementById("key-" + key) && !/[A-Z .,!?]/.test(ch)) key = "?123";
+            const el = document.getElementById("key-" + key);
+            if (el) el.classList.add("next-key");
+        }
+
+        // GameLoop: allgemeine Automatik und separat die automatische A-Taste.
+        let msCounter = 0;
+        let autoACounter = 0;
+        function gameLoop() {
+            if (!gameState.settings.autoEnabled) return;
+            msCounter += 100;
+            autoACounter += 100;
+            const targetText = getCurrentTextString();
+            if (gameState.textProgress >= targetText.length) return;
+
+            if (isUpgradePurchased("auto_a") && autoACounter >= 3000 && targetText[gameState.textProgress].toUpperCase() === "A") {
+                autoACounter = 0;
+                executeCharacterWrite(targetText[gameState.textProgress], 'auto');
+                updateAllDisplays(); saveGameState();
+                return;
+            }
+            if (!isUpgradePurchased("unlock_auto")) return;
+            let speedLvl = gameState.upgrades["auto_speed"] || 0;
+            let currentInterval = Math.max(200, 3000 - speedLvl * 500);
+            if (msCounter >= currentInterval) {
+                msCounter = 0;
+                const expectedChar = getCurrentTextString()[gameState.textProgress];
+                if (expectedChar !== undefined) {
+                    executeCharacterWrite(expectedChar, 'auto');
+                    updateAllDisplays(); saveGameState();
+                }
+            }
+        }
+
+        // Talentbaum Steuerung
+        function buildSkillTreeUI() {
+            const container = document.getElementById("skilltree-container");
+            container.innerHTML = "";
+
+            // Einteilen in logische Reihen für saubere Optik
+            const rows = {};
+            SKILL_TREE.forEach(skill => {
+                if (!rows[skill.row]) rows[skill.row] = [];
+                rows[skill.row].push(skill);
+            });
+
+            Object.keys(rows).sort().forEach(r => {
+                const rowDiv = document.createElement("div");
+                rowDiv.className = "skill-row";
+                
+                rows[r].forEach(skill => {
+                    const currentLvl = gameState.upgrades[skill.id] || 0;
+                    const node = document.createElement("div");
+                    node.className = "skill-node";
+                    if (skill.color === "purple") node.style.borderColor = "#bb86fc";
+                    
+                    // Statustyp ermitteln
+                    let isLocked = false;
+                    skill.requires.forEach(reqId => {
+                        const reqLvl = gameState.upgrades[reqId] || 0;
+                        if (reqLvl === 0) isLocked = true;
+                    });
+
+                    // Kostensteigerungs-Formel (Skalierung)
+                    let currentCost = Math.round(skill.cost * Math.pow(1.8, currentLvl));
+
+                    if (currentLvl >= skill.maxLevel) {
+                        node.classList.add("purchased");
+                        node.innerHTML = `<h4>${skill.label}</h4><p>${skill.desc}</p><span class="cost">MAXSTUFE</span>`;
+                    } else if (isLocked) {
+                        node.classList.add("locked");
+                        node.innerHTML = `<h4>${skill.label}</h4><p>Voraussetzung fehlt</p><span class="cost">${currentCost} SP</span>`;
+                    } else {
+                        node.classList.add("available");
+                        node.onclick = () => buyUpgrade(skill.id, currentCost);
+                        node.innerHTML = `<h4>${skill.label} (${currentLvl}/${skill.maxLevel})</h4><p>${skill.desc}</p><span class="cost">${currentCost} SP</span>`;
+                    }
+
+                    rowDiv.appendChild(node);
+                });
+                container.appendChild(rowDiv);
+            });
+        }
+
+        function buyUpgrade(id, cost) {
+            if (gameState.sp >= cost) {
+                gameState.sp -= cost;
+                if (!gameState.upgrades[id]) gameState.upgrades[id] = 0;
+                gameState.upgrades[id]++;
+                
+                // Statistik-Triggerevent
+                let totalUpgrades = 0;
+                Object.values(gameState.upgrades).forEach(v => totalUpgrades += v);
+                
+                showToast("⚡ Upgrade erworben!");
+                buildSkillTreeUI();
+                updateAllDisplays();
+                saveGameState();
+            } else {
+                alert("Nicht genügend Schreibpunkte!");
+            }
+        }
+
+        function isUpgradePurchased(id) {
+            return (gameState.upgrades[id] || 0) > 0;
+        }
+
+        // Erfolgssystem Logik
+        function checkAchievements() {
+            let totalUpgrades = 0;
+            Object.values(gameState.upgrades).forEach(v => totalUpgrades += v);
+
+            ACHIEVEMENTS.forEach(ach => {
+                if (gameState.achievementsUnlocked.includes(ach.id)) return;
+
+                let currentVal = 0;
+                if (ach.type === "total_chars") currentVal = gameState.stats.totalChars;
+                if (ach.type === "total_sp") currentVal = gameState.totalSpEarned;
+                if (ach.type === "upgrades_bought") currentVal = totalUpgrades;
+                if (ach.type === "auto_unlocked") currentVal = isUpgradePurchased("unlock_auto") ? 1 : 0;
+                if (ach.type === "texts_finished") currentVal = gameState.stats.textsFinished;
+                if (ach.type === "auto_chars") currentVal = gameState.stats.autoChars;
+                if (ach.type === "gold_chars") currentVal = gameState.stats.goldChars;
+
+                if (currentVal >= ach.target) {
+                    gameState.achievementsUnlocked.push(ach.id);
+                    if (ach.reward) { gameState.sp += ach.reward; gameState.totalSpEarned += ach.reward; }
+                    showToast(`🏆 Erfolg: ${ach.name}`);
+                    renderAchievements();
+                }
+            });
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById("achievements-display");
+            container.innerHTML = "";
+
+            let totalUpgrades = 0;
+            Object.values(gameState.upgrades).forEach(v => totalUpgrades += v);
+
+            ACHIEVEMENTS.forEach(ach => {
+                const isUnlocked = gameState.achievementsUnlocked.includes(ach.id);
+                
+                let currentVal = 0;
+                if (ach.type === "total_chars") currentVal = gameState.stats.totalChars;
+                if (ach.type === "total_sp") currentVal = gameState.totalSpEarned;
+                if (ach.type === "upgrades_bought") currentVal = totalUpgrades;
+                if (ach.type === "auto_unlocked") currentVal = isUpgradePurchased("unlock_auto") ? 1 : 0;
+                if (ach.type === "texts_finished") currentVal = gameState.stats.textsFinished;
+                if (ach.type === "auto_chars") currentVal = gameState.stats.autoChars;
+                if (ach.type === "gold_chars") currentVal = gameState.stats.goldChars;
+
+                let pct = Math.min(100, (currentVal / ach.target) * 100);
+
+                const card = document.createElement("div");
+                card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
+                card.innerHTML = `
+                    <h4>${ach.name}</h4>
+                    <p>${ach.desc}</p>
+                    <div style="font-size:11px; text-align:right;">${Math.min(currentVal, ach.target)} / ${ach.target}</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Live-Aktualisierung der Virtuellen Tastaturbeschriftungen (Anforderung Punkt 6)
+        function updateKeyboardSubtitles() {
+            KEYBOARD_LAYOUT.forEach(key => {
+                const goldSpan = document.getElementById(`sub-gold-${key}`);
+                const greySpan = document.getElementById(`sub-grey-${key}`);
+                
+                if (goldSpan && greySpan) {
+                    if (!isUpgradePurchased("unlock_free") || key === "?123") {
+                        goldSpan.textContent = "";
+                        greySpan.textContent = "";
+                        return;
+                    }
+
+                    let stock = gameState.freeStock[key] || 0;
+                    let prog = gameState.freeProgress[key] || 0;
+                    let threshold = 6 - (gameState.upgrades["free_speed"] || 0);
+                    if (threshold < 2) threshold = 2;
+                    let needed = threshold - prog;
+
+                    goldSpan.textContent = stock > 0 ? stock : "";
+                    greySpan.textContent = needed;
+                }
+            });
+        }
+
+        // Globale Anzeige-Synchronisierung
+        function updateAllDisplays() {
+            document.getElementById("global-sp").textContent = Math.floor(gameState.sp);
+            
+            // Statistiken
+            document.getElementById("stat-total-chars").textContent = gameState.stats.totalChars;
+            document.getElementById("stat-manual-chars").textContent = gameState.stats.manualChars;
+            document.getElementById("stat-auto-chars").textContent = gameState.stats.autoChars;
+            document.getElementById("stat-gold-chars").textContent = gameState.stats.goldChars;
+            document.getElementById("stat-total-sp").textContent = Math.floor(gameState.totalSpEarned);
+            document.getElementById("stat-finished-texts").textContent = gameState.stats.textsFinished;
+
+            // Schalter-Stände synchronisieren
+            document.getElementById("switch-auto").checked = gameState.settings.autoEnabled;
+            document.getElementById("switch-free").checked = gameState.settings.freeEnabled;
+
+            renderPaper();
+            updateKeyboardSubtitles();
+            updateNextKeyboardKey();
+            renderAchievements();
+        }
+
+        // Reales Keyboard-Mapping für PC-Spieler & iPad-Tastaturen
+        function handleRealKeyDown(e) {
+            // Check Admin Kombination (Shift + Alt + A)
+            if (e.shiftKey && e.altKey && e.key.toUpperCase() === 'A') {
+                triggerAdminAccess();
+                return;
+            }
+
+            let pressed = e.key;
+            if (pressed === "Escape") return;
+            handleKeyInput(pressed);
+        }
+
+        // Admin-Panel Steuerungsmechanismus
+        function triggerAdminAccess() {
+            let pass = prompt("Bitte Admin-Passwort eingeben:");
+            if (pass === "writingceddy") {
+                document.getElementById("admin-panel").style.display = "block";
+            } else if (pass !== null) {
+                alert("Ungültiges Passwort!");
+            }
+        }
+
+        function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
+
+        function adminAddSP(amount) {
+            gameState.sp = Math.max(0, gameState.sp + amount);
+            if (amount > 0) gameState.totalSpEarned += amount;
+            updateAllDisplays();
+            saveGameState();
+        }
+
+        function adminGrantAllFreeChars(amt) {
+            KEYBOARD_LAYOUT.forEach(k => {
+                if(k !== "?123") gameState.freeStock[k] = (gameState.freeStock[k] || 0) + amt;
+            });
+            updateAllDisplays();
+            saveGameState();
+        }
+
+        function adminBuyAllUpgrades() {
+            SKILL_TREE.forEach(skill => gameState.upgrades[skill.id] = skill.maxLevel);
+            buildSkillTreeUI(); checkAchievements(); updateAllDisplays(); saveGameState();
+            showToast("Alle Upgrades freigeschaltet");
+        }
+        function adminUnlockAllAchievements() {
+            ACHIEVEMENTS.forEach(ach => { if (!gameState.achievementsUnlocked.includes(ach.id)) gameState.achievementsUnlocked.push(ach.id); });
+            renderAchievements(); saveGameState(); showToast("Alle Erfolge freigeschaltet");
+        }
+        function adminResetProgress() { gameState.textProgress = 0; gameState.history = []; updateAllDisplays(); saveGameState(); }
+
+        // Navigation
+        function switchTab(tabId, button) {
+            document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+            document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
+            
+            document.getElementById(tabId).classList.add("active");
+            const activeButton = button || document.querySelector(`.nav-btn[onclick*="${tabId}"]`);
+            if (activeButton) activeButton.classList.add("active");
+        }
+
+        function loadTemplate() {
+            gameState.currentTemplateKey = document.getElementById("template-dropdown").value;
+            resetCurrentText();
+        }
+
+        function toggleSetting(key, val) {
+            gameState.settings[key] = val;
+            saveGameState();
+            updateAllDisplays();
+        }
+
+        function changeFontSize(className) {
+            const paper = document.getElementById("paper");
+            if (paper) {
+                paper.className = `paper-container ${className}`;
+            }
+            gameState.settings.fontSize = className;
+            saveGameState();
+        }
+
+        function addCustomText() {
+            const title = document.getElementById("custom-title").value.trim();
+            const content = document.getElementById("custom-content").value.trim();
+            if(!title || !content) return alert("Bitte Titel und Inhalt ausfüllen.");
+
+            const dropdown = document.getElementById("template-dropdown");
+            const optionId = "custom_" + Date.now();
+            TEXT_TEMPLATES[optionId] = content;
+
+            const opt = document.createElement("option");
+            opt.value = optionId;
+            opt.textContent = `Eigener Text: ${title}`;
+            dropdown.appendChild(opt);
+            dropdown.value = optionId;
+            
+            loadTemplate();
+            document.getElementById("custom-title").value = "";
+            document.getElementById("custom-content").value = "";
+            showToast("📝 Eigener Text geladen!");
+        }
+
+        // Sound-Engine
+        function playClickSound() {
+            if (!gameState.settings.sound) return;
+            const snd = document.getElementById("audio-click");
+            snd.currentTime = 0;
+            snd.play().catch(()=>{});
+        }
+
+        // Toast-Notification System
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2500);
+        }
+
+        // Lokaler Cache + optionale Cloud-Synchronisierung über Supabase.
+        function saveGameState() {
+            localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
+            if (currentUser && supabaseClient) {
+                clearTimeout(cloudSaveTimer);
+                cloudSaveTimer = setTimeout(saveCloudState, 900);
+            }
+        }
+
+        function loadGameState() {
+            let saved = localStorage.getItem("writing_empire_v04_save") || localStorage.getItem("writing_empire_v03_save");
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    gameState = { ...gameState, ...parsed,
+                        stats: { ...gameState.stats, ...(parsed.stats || {}) },
+                        settings: { ...gameState.settings, ...(parsed.settings || {}) },
+                        upgrades: parsed.upgrades || {}, freeStock: parsed.freeStock || {}, freeProgress: parsed.freeProgress || {} };
+                    document.getElementById("template-dropdown").value = gameState.currentTemplateKey;
+                    document.getElementById("setting-fontsize").value = gameState.settings.fontSize;
+                    changeFontSize(gameState.settings.fontSize);
+                } catch(e) { console.error("Fehler beim Laden des Spielstands", e); }
+            }
+        }
+
+        function initSupabase() {
+            const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("HIER_") && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_ANON_KEY.includes("HIER_");
+            if (!configured || !window.supabase) {
+                setAuthStatus("Supabase noch nicht eingerichtet – lokaler Spielstand aktiv.");
+                return;
+            }
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient.auth.getSession().then(async ({data}) => {
+                if (data.session) { currentUser = data.session.user; await loadCloudState(); }
+                updateAuthStatus();
+            });
+            supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+                currentUser = session?.user || null;
+                if (currentUser) await loadCloudState();
+                updateAuthStatus();
+            });
+        }
+        function setAuthStatus(msg) { const el=document.getElementById("auth-status"); if(el) el.textContent=msg; }
+        function updateAuthStatus() { setAuthStatus(currentUser ? `Angemeldet als ${currentUser.email} – Cloud-Spielstand aktiv.` : "Nicht angemeldet – lokaler Spielstand aktiv."); }
+        async function signUp() {
+            if (!supabaseClient) return showToast("Bitte zuerst Supabase in index.html konfigurieren.");
+            const email=document.getElementById("auth-email").value.trim(), password=document.getElementById("auth-password").value;
+            if (!email || password.length < 6) return showToast("E-Mail und Passwort (mind. 6 Zeichen) eingeben.");
+            const {error}=await supabaseClient.auth.signUp({email,password});
+            if(error) return showToast(error.message);
+            showToast("Registrierung gestartet – prüfe ggf. deine E-Mails.");
+        }
+        async function signIn() {
+            if (!supabaseClient) return showToast("Bitte zuerst Supabase in index.html konfigurieren.");
+            const email=document.getElementById("auth-email").value.trim(), password=document.getElementById("auth-password").value;
+            const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+            if(error) return showToast(error.message);
+            currentUser=data.user; await loadCloudState(); updateAuthStatus(); showToast("Erfolgreich angemeldet!");
+        }
+        async function signOut() {
+            if (!supabaseClient) return;
+            const {error}=await supabaseClient.auth.signOut();
+            if(error) return showToast(error.message);
+            currentUser=null; updateAuthStatus();
+        }
+        async function loadCloudState() {
+            if(!currentUser || !supabaseClient) return;
+            const {data,error}=await supabaseClient.from("player_saves").select("game_state").eq("user_id",currentUser.id).maybeSingle();
+            if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
+            if(data?.game_state) {
+                const localTime=Number(localStorage.getItem("writing_empire_v04_saved_at") || 0);
+                const cloudState=data.game_state;
+                gameState={...gameState,...cloudState,stats:{...gameState.stats,...(cloudState.stats||{})},settings:{...gameState.settings,...(cloudState.settings||{})}};
+                updateAllDisplays(); buildSkillTreeUI(); localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                setAuthStatus("Cloud-Spielstand geladen.");
+            } else { await saveCloudState(); }
+        }
+        async function saveCloudState() {
+            if(!currentUser || !supabaseClient) return;
+            const {error}=await supabaseClient.from("player_saves").upsert({user_id:currentUser.id,game_state:gameState,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+            if(error) setAuthStatus("Cloud-Speichern fehlgeschlagen: " + error.message);
+            else setAuthStatus(`Angemeldet als ${currentUser.email} – Spielstand synchronisiert.`);
+        }
+
+        function clearSavegame() {
+            if(confirm("Möchtest du deinen Spielstand wirklich unwiderruflich löschen?")) {
+                localStorage.removeItem("writing_empire_v04_save");
+                localStorage.removeItem("writing_empire_v03_save");
+                if (currentUser && supabaseClient) supabaseClient.from("player_saves").delete().eq("user_id", currentUser.id);
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
