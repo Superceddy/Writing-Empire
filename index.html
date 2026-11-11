@@ -1182,29 +1182,40 @@ let pressed = e.key;
         }
         async function loadCloudState() {
             if(!currentUser || !supabaseClient) return;
-            const {data,error}=await supabaseClient.from("player_saves").select("game_state").eq("user_id",currentUser.id).maybeSingle();
+            const {data,error}=await supabaseClient.from("player_saves").select("game_state,updated_at").eq("user_id",currentUser.id).maybeSingle();
             if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
             if(data?.game_state) {
-                const localTime=Number(localStorage.getItem("writing_empire_v04_saved_at") || 0);
                 let localState=null;
                 try { localState=JSON.parse(localStorage.getItem("writing_empire_v04_save") || "null"); } catch(e) {}
+                const localTime=Number(localStorage.getItem("writing_empire_v04_saved_at") || 0);
                 const cloudState=data.game_state;
                 const cloudTime=Date.parse(data.updated_at || "") || 0;
-                const localChars=localState?.stats?.totalChars || 0;
-                const cloudChars=cloudState?.stats?.totalChars || 0;
-                const localSP=localState?.totalSpEarned || 0;
-                const cloudSP=cloudState?.totalSpEarned || 0;
-                const localHasMore=!localTime && localState && (localChars>cloudChars || (localChars===cloudChars && localSP>cloudSP));
-                if(localState && (localTime>=cloudTime || localHasMore)) {
+                const localChars=Number(localState?.stats?.totalChars)||0;
+                const cloudChars=Number(cloudState?.stats?.totalChars)||0;
+                const localSP=Number(localState?.totalSpEarned)||0;
+                const cloudSP=Number(cloudState?.totalSpEarned)||0;
+                const localAhead=!!localState&&(localChars>cloudChars||(localChars===cloudChars&&localSP>cloudSP));
+                const cloudAhead=cloudChars>localChars||(cloudChars===localChars&&cloudSP>localSP);
+                if(localState&&(localTime>cloudTime||(!cloudTime&&localAhead)||(localTime===cloudTime&&localAhead))) {
                     await saveCloudState();
                     setAuthStatus("Lokaler Spielstand synchronisiert.");
                     return;
                 }
-                gameState={...gameState,...cloudState,stats:{...gameState.stats,...(cloudState.stats||{})},settings:{...gameState.settings,...(cloudState.settings||{})}};
-                updateAllDisplays(); buildSkillTreeUI();
-                localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
-                localStorage.setItem("writing_empire_v04_saved_at",String(cloudTime || Date.now()));
-                setAuthStatus("Cloud-Spielstand geladen.");
+                if(!localState||cloudTime>localTime||cloudAhead) {
+                    gameState={...gameState,...cloudState,
+                        stats:{...gameState.stats,...(cloudState.stats||{})},
+                        settings:{...gameState.settings,...(cloudState.settings||{})},
+                        upgrades:cloudState.upgrades||{},freeStock:cloudState.freeStock||{},freeProgress:cloudState.freeProgress||{}};
+                    updateAllDisplays(); buildSkillTreeUI();
+                    try {
+                        localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                        localStorage.setItem("writing_empire_v04_saved_at",String(cloudTime||Date.now()));
+                    } catch(e) { console.error("Cloud-Spielstand konnte nicht lokal gesichert werden",e); }
+                    setAuthStatus("Cloud-Spielstand geladen.");
+                } else {
+                    await saveCloudState();
+                    setAuthStatus("Lokaler Spielstand synchronisiert.");
+                }
             } else { await saveCloudState(); }
         }
         async function saveCloudState() {
