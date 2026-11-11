@@ -826,6 +826,8 @@
                     const currentLvl = gameState.upgrades[skill.id] || 0;
                     const node = document.createElement("div");
                     node.className = "skill-node";
+                    node.dataset.skillId = skill.id;
+                    node.dataset.weGroup = skill.group || "Schreibkunst";
                     if (skill.color === "purple") node.style.borderColor = "#bb86fc";
                     
                     // Statustyp ermitteln
@@ -1229,6 +1231,7 @@ let pressed = e.key;
             if(confirm("Möchtest du deinen Spielstand wirklich unwiderruflich löschen?")) {
                 localStorage.removeItem("writing_empire_v04_save");
                 localStorage.removeItem("writing_empire_v03_save");
+                localStorage.removeItem("writing_empire_v04_saved_at");
                 if (currentUser && supabaseClient) supabaseClient.from("player_saves").delete().eq("user_id", currentUser.id);
                 window.location.reload();
             }
