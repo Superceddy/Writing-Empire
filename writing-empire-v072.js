@@ -94,7 +94,7 @@ function fixGroupHeadings(){
 function addPrestigeConnectors(){
  const tree=$("we-prestige-tree");if(!tree||tree.querySelector("svg"))return;
  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 300 700");svg.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none";
- [[150,35,70,120],[150,35,230,120],[70,120,70,220],[230,120,230,220],[70,220,150,320],[230,220,150,320],[150,320,150,405]].forEach(a=>{const l=document.createElementNS("http://www.w3.org/2000/svg","line");["x1","y1","x2","y2"].forEach((k,i)=>l.setAttribute(k,a[i]));l.setAttribute("stroke","#a66bd0");l.setAttribute("stroke-width","2");svg.appendChild(l);});tree.prepend(svg);
+ [[150,55,50,167],[150,55,250,167],[50,167,50,279],[250,167,250,279],[50,279,50,391],[250,279,250,391],[50,391,150,503],[250,391,150,503],[150,503,150,615]].forEach(a=>{const l=document.createElementNS("http://www.w3.org/2000/svg","line");["x1","y1","x2","y2"].forEach((k,i)=>l.setAttribute(k,a[i]));l.setAttribute("stroke","#a66bd0");l.setAttribute("stroke-width","2");svg.appendChild(l);});tree.prepend(svg);
 }
 
 
