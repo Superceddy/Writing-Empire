@@ -89,7 +89,7 @@ function patchKeyboard(){
   window.handleKeyInput=function(ch){
    const before=gameState.textProgress,expected=getCurrentTextString()[before];
    original(ch);
-   if(gameState.textProgress!==before+1)return;
+   if(gameState.textProgress!==before+1){updateAllDisplays();saveGameState();return;}
    const streak=gameState.stats.errorFreeStreak||0;
    if(/[QXYZJ]/i.test(expected||""))gameState.sp+=5*(gameState.upgrades.red_rare||0);
    if(streak>0&&streak%5===0)gameState.sp+=gameState.upgrades.green_focus||0;
@@ -136,7 +136,7 @@ function finalTouchups(){
  window.doPrestige=function(){const gain=pGain();if(!gain)return toast("Mindestens 10.000 SP nötig.");askInGame("Prestige starten","Du erhältst voraussichtlich "+gain+" Prestige-Punkte. Normale Upgrades, aktuelle SP und Textfortschritt werden zurückgesetzt. Erfolge und Prestige-Upgrades bleiben erhalten.",()=>{gameState.prestige.points+=gain;gameState.prestige.level++;gameState.prestige.totalPrestiges++;gameState.sp=(gameState.prestige.upgrades.p_start||0)*250;gameState.textProgress=0;gameState.history=[];gameState.upgrades={};gameState.freeStock={};gameState.freeProgress={};gameState.totalSpEarned+=gameState.sp;saveGameState();buildSkillTreeUI();updateAllDisplays();prestige();toast("Prestige abgeschlossen: +"+gain+" Punkte");});};
  // Display the automatic-writing cooldown beside the keyboard.
  if(!$("we-auto-cooldown")){const n=document.createElement("div");n.id="we-auto-cooldown";n.style.cssText="text-align:center;font-size:12px;color:var(--text-muted);margin:5px";$("virtual-keyboard")?.after(n);}
- let lastAuto=Date.now();setInterval(()=>{const n=$("we-auto-cooldown");if(n){const active=gameState.settings.autoEnabled&&(gameState.upgrades.unlock_auto||gameState.upgrades.auto_a||gameState.upgrades.auto_e||gameState.upgrades.auto_s||gameState.upgrades.auto_t);n.textContent=active?"Nächste automatische Taste: "+Math.max(0,Math.ceil((1800-(Date.now()-lastAuto))/1000))+" s":"Automatik aus";if(active&&Date.now()-lastAuto>=1800)lastAuto=Date.now();}},250);
+ setInterval(()=>{const n=$("we-auto-cooldown");if(n){const ms=window.getAutoCooldownMs?.();n.textContent=ms===null?"Automatik aus":"Nächste automatische Taste: "+Math.ceil(ms/1000)+" s";}},200);
  // Ensure cloud community texts are loaded once the Supabase session has initialized.
  const poll=()=>{if(supabaseClient){loadPublic();return;}setTimeout(poll,1500);};setTimeout(poll,1000);
 }
