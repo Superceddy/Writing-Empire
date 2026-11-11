@@ -500,6 +500,7 @@
         let currentUser = null;
         let cloudSaveTimer = null;
         let cloudLoadPromise = null;
+        let cloudReady = false;
 
         // Systemkonfiguration & Datenmodelle
         const TEXT_TEMPLATES = {
@@ -1109,7 +1110,7 @@ let pressed = e.key;
                 console.error("Lokaler Spielstand konnte nicht gespeichert werden",e);
                 setAuthStatus("Lokales Speichern fehlgeschlagen – bitte Browser-Speicher prüfen.");
             }
-            if (currentUser && supabaseClient) {
+            if (currentUser && supabaseClient && cloudReady) {
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(saveCloudState, 900);
             }
@@ -1146,12 +1147,14 @@ let pressed = e.key;
             }
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             supabaseClient.auth.getSession().then(async ({data}) => {
-                if (data.session) { currentUser = data.session.user; await loadCloudState(); }
+                if (data.session) { currentUser = data.session.user; cloudReady=false; await loadCloudState(); cloudReady=true; }
+                else cloudReady=false;
                 updateAuthStatus();
             });
             supabaseClient.auth.onAuthStateChange(async (_event, session) => {
                 currentUser = session?.user || null;
-                if (currentUser) await loadCloudState();
+                if (currentUser) { cloudReady=false; await loadCloudState(); cloudReady=true; }
+                else cloudReady=false;
                 updateAuthStatus();
             });
         }
