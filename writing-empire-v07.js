@@ -29,9 +29,8 @@ function patchAchievementsAndPreviews(){
  // Remove the old prestige skill-tree box from settings; prestige is a separate tab and an upgrade shop now.
  const oldBox=$("we-prestige");if(oldBox)oldBox.style.display="none";
 }
-function init(){window.adminFullReset=deleteSave;const oldUpdate=window.updateAllDisplays;window.updateAllDisplays=function(){oldUpdate();series();stats();prestige();};gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});patchSkills();addTiers();patchRenderer();patchKeyboard();addStats();addPrestige();addThemeMusic();addPublicAdmin();addGroupTabs();buildSkillTreeUI();renderPrestige();renderStats();renderSeries();setTimeout(loadPublic,1800);}
+function init(){window.adminFullReset=deleteSave;const oldUpdate=window.updateAllDisplays;window.updateAllDisplays=function(){oldUpdate();series();stats();prestige();};gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});patchSkills();addTiers();patchAchievementsAndPreviews();patchRenderer();patchKeyboard();addStats();addPrestige();addThemeMusic();addPublicAdmin();addGroupTabs();buildSkillTreeUI();renderPrestige();renderStats();renderSeries();setTimeout(loadPublic,1800);}
 window.addEventListener("load",()=>setTimeout(init,100));
-})();
 
 /* v0.7.1 finishing corrections */
 function finalTouchups(){
@@ -39,7 +38,7 @@ function finalTouchups(){
  // The physical keyboard modifier keys sit directly beneath the spacebar.
  const kb=$("virtual-keyboard");if(kb){const all=[...kb.querySelectorAll(".key")],space=$("key-SPACE"),mods=all.filter(k=>/Shift|Caps Lock/i.test(k.textContent));if(space)mods.forEach(k=>kb.appendChild(k));}
  // Show the real OS casing state (including Caps Lock) and the character expected next.
- const updateCase=ev=>{let n=$("we-case-state");if(!n){n=document.createElement("div");n.id="we-case-state";n.style.cssText="text-align:center;font-size:12px;margin:5px;color:var(--text-muted)";kb?.after(n);}const caps=!!ev?.getModifierState?.("CapsLock"),shift=!!ev?.shiftKey,upper=caps!==shift,expected=getCurrentTextString()[gameState.textProgress];if(n)n.textContent="Tastatur: "+(upper?"GROSS":"klein")+" · Nächstes Zeichen: "+(expected||"—");};
+ const updateCase=ev=>{let n=$("we-case-state");if(!n){n=document.createElement("div");n.id="we-case-state";n.style.cssText="text-align:center;font-size:12px;margin:5px;color:var(--text-muted)";kb?.after(n);}const caps=!!ev?.getModifierState?.("CapsLock")||!!gameState.settings.capsLock,shift=!!ev?.shiftKey||!!gameState.settings.shift,upper=caps!==shift,expected=getCurrentTextString()[gameState.textProgress];if(n)n.textContent="Tastatur: "+(upper?"GROSS":"klein")+" · Nächstes Zeichen: "+(expected||"—");};
  window.addEventListener("keydown",updateCase,true);window.addEventListener("keyup",updateCase,true);updateCase();
  // Refresh prestige estimates after the existing reset routine has completed.
  window.doPrestige=function(){const gain=pGain();if(!gain)return toast("Mindestens 10.000 SP nötig.");askInGame("Prestige starten","Du erhältst voraussichtlich "+gain+" Prestige-Punkte. Normale Upgrades, aktuelle SP und Textfortschritt werden zurückgesetzt. Erfolge und Prestige-Upgrades bleiben erhalten.",()=>{gameState.prestige.points+=gain;gameState.prestige.level++;gameState.prestige.totalPrestiges++;gameState.sp=(gameState.prestige.upgrades.p_start||0)*250;gameState.textProgress=0;gameState.history=[];gameState.upgrades={};gameState.freeStock={};gameState.freeProgress={};gameState.totalSpEarned+=gameState.sp;saveGameState();buildSkillTreeUI();updateAllDisplays();prestige();toast("Prestige abgeschlossen: +"+gain+" Punkte");});};
@@ -50,3 +49,4 @@ function finalTouchups(){
  const poll=()=>{if(supabaseClient){loadPublic();return;}setTimeout(poll,1500);};setTimeout(poll,1000);
 }
 window.addEventListener("load",()=>setTimeout(finalTouchups,350));
+})();
