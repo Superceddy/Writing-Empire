@@ -136,8 +136,9 @@ window.executeCharacterWrite=function(ch,type){
  if(gameState.textProgress>=getCurrentTextString().length)finishText();
 };
 window.gameLoop=function(){
- if(!gameState.settings.autoEnabled)return;const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
+ const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
  if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
+ if(!gameState.settings.autoEnabled)return;
  if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return;
  msCounter+=100;autoACounter+=100;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
