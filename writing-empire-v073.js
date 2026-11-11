@@ -41,7 +41,7 @@ function fixInput(){
   if(e.target.closest(".key")!==key)return;
   key.__weIgnoreTouchClick=true;
   setTimeout(()=>{key.__weIgnoreTouchClick=false;},500);
-  if(key.id==="we-shift"||key.id==="we-caps"){key.click();return;}
+  if(key.id==="we-shift"||key.id==="we-caps"){key.onclick?.();return;}
   if(key.id==="key-SPACE"){window.handleKeyInput(" ");return;}
   const raw=key.id.slice(4);
   if(raw==="?123"){window.handleKeyInput("?123");return;}
