@@ -81,13 +81,14 @@ additions.forEach(s=>{const old=SKILL_TREE.find(x=>x.id===s.id);if(old)Object.as
 SKILL_TREE.forEach(s=>{if(!s.group)s.group=s.color==="purple"?"Purpur":(s.id.indexOf("auto")===0||s.id==="unlock_auto"?"Automatisierung":(s.id.indexOf("free")>=0||s.id.indexOf("gold")>=0||s.id==="unlock_free"?"Gold":"Schreibkunst"));});
 
 function colorAt(i){
- const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3);
- const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2);
+ const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3-(gameState.prestige?.upgrades?.p_purplechance||0)*2);
+ const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2-(gameState.prestige?.upgrades?.p_goldchance||0)*3);
  if(i>=gameState.textProgress&&(i-5)%pEvery===0&&isUpgradePurchased("purple_bonus"))return "purple";
  if(i>=gameState.textProgress&&(i-10)%gEvery===0&&isUpgradePurchased("unlock_free"))return "gold";
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
  return "";
 }
+window.colorAt=colorAt;
 window.renderPaper=function(){
  const paper=byId("paper");if(!paper)return;paper.innerHTML="";
  gameState.history.forEach(item=>{const x=document.createElement("span");x.textContent=item.char;x.className=item.type==="gold"?"char-gold":item.type==="purple"?"char-purple":item.type==="blue"?"char-blue":"char-normal";paper.appendChild(x);});
@@ -135,15 +136,16 @@ window.executeCharacterWrite=function(ch,type){
  if(gameState.textProgress>=getCurrentTextString().length)finishText();
 };
 window.gameLoop=function(){
- if(!gameState.settings.autoEnabled)return;const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
+ const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
  if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
+ if(!gameState.settings.autoEnabled)return;
  if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return;
  msCounter+=100;autoACounter+=100;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
  const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===c.toUpperCase());
  if((specific||(isUpgradePurchased("auto_vowels")&&"AEIOU".includes(c.toUpperCase())))&&autoACounter>=1800){autoACounter=0;executeCharacterWrite(c,"auto");updateAllDisplays();saveGameState();return;}
  if(!isUpgradePurchased("unlock_auto"))return;
- const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300);
+ const interval=Math.max(250,3000-(gameState.upgrades.auto_speed||0)*300-(gameState.prestige?.upgrades?.p_auto||0)*150);
  if(msCounter>=interval){msCounter=0;executeCharacterWrite(c,"auto");updateAllDisplays();saveGameState();}
 };
 
@@ -155,7 +157,7 @@ window.buildSkillTreeUI=function(){
  const sec=document.createElement("section");sec.className="skill-group";const h=document.createElement("h3");h.textContent=g;sec.appendChild(h);const row=document.createElement("div");row.className="skill-row";
  SKILL_TREE.filter(s=>(s.group||"Weitere Talente")===g).forEach(s=>{
  const lvl=gameState.upgrades[s.id]||0,cost=Math.round(s.cost*Math.pow(1.65,lvl)),missing=(s.requires||[]).filter(id=>(gameState.upgrades[id]||0)<1),node=document.createElement("div");
- node.className="skill-node "+(lvl>=s.maxLevel?"purchased":missing.length?"locked":"available");
+ node.className="skill-node "+(lvl>=s.maxLevel?"purchased":missing.length?"locked":"available");node.dataset.skillId=s.id;
  const req=missing.map(id=>{const x=SKILL_TREE.find(y=>y.id===id);return x?x.label:id;}).join(", ");
  node.innerHTML="<h4>"+s.label+" ("+lvl+"/"+s.maxLevel+")</h4><p>"+s.desc+"</p><span class='preview'>Aktuell: Stufe "+lvl+" · Danach: "+Math.min(s.maxLevel,lvl+1)+"</span><span class='cost'>"+(lvl>=s.maxLevel?"MAXSTUFE":cost+" SP")+"</span>"+(missing.length?"<p class='preview'>Benötigt: "+req+"</p>":"");
  if(lvl<s.maxLevel&&!missing.length){node.tabIndex=0;node.onclick=()=>buyUpgrade(s.id,cost);node.onkeydown=e=>{if(e.key==="Enter")buyUpgrade(s.id,cost);};}
