@@ -82,7 +82,7 @@ SKILL_TREE.forEach(s=>{if(!s.group)s.group=s.color==="purple"?"Purpur":(s.id.ind
 
 function colorAt(i){
  const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3);
- const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4);
+ const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2);
  if(i>=gameState.textProgress&&(i-5)%pEvery===0&&isUpgradePurchased("purple_bonus"))return "purple";
  if(i>=gameState.textProgress&&(i-10)%gEvery===0&&isUpgradePurchased("unlock_free"))return "gold";
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
@@ -104,12 +104,12 @@ window.updateNextKeyboardKey=function(){
 /* Exact-case input, error streak, special-key gate */
 window.handleKeyInput=function(input){
  const t=getCurrentTextString(),expected=t[gameState.textProgress];if(expected===undefined){finishText();return;}
- if(input==="?123"){gameState.specialKeyMode=true;showToast("Sonderzeichenmodus aktiviert.");return;}
+ if(input==="?123"){const next=getCurrentTextString()[gameState.textProgress];if(next!==undefined&&!/[A-Za-z0-9 .,!? ]/.test(next)){input=next;gameState.specialKeyMode=true;}else{showToast("Die Sonderzeichen-Taste ist nur für Zeichen ohne eigene Taste gedacht.");return;}}
  const special=!/[A-Za-z0-9 .,!? ]/.test(expected);
  if(special&&!gameState.specialKeyMode){showToast("Dafür zuerst ?123 aktivieren.");return;}
  if(!special&&gameState.specialKeyMode)gameState.specialKeyMode=false;
  if(input!==expected){gameState.stats.errors++;gameState.stats.errorFreeStreak=0;showToast("Falsche Taste – Serie zurückgesetzt.");return;}
- gameState.specialKeyMode=false;gameState.stats.errorFreeStreak++;gameState.stats.bestStreak=Math.max(gameState.stats.bestStreak,gameState.stats.errorFreeStreak);
+ gameState.specialKeyMode=false;if(gameState.settings.shift)gameState.settings.shift=false;gameState.stats.errorFreeStreak++;gameState.stats.bestStreak=Math.max(gameState.stats.bestStreak,gameState.stats.errorFreeStreak);
  if(/[A-ZÄÖÜ]/.test(expected))gameState.stats.uppercaseCorrect++;
  let type=colorAt(gameState.textProgress);if(type!=="gold"&&type!=="purple"&&type!=="blue")type="manual";
  if(type==="blue")gameState.blueUntil=Date.now()+5000+(gameState.upgrades.blue_duration||0)*1500;
@@ -127,7 +127,7 @@ window.executeCharacterWrite=function(ch,type){
  let gain=1;if(type==="manual"||type==="purple"||type==="blue")gain+=gameState.upgrades.base_click||0;
  if(type==="purple")gain+=5+2*(gameState.upgrades.purple_power||0);
  if(type==="gold")gain+=3*(gameState.upgrades.gold_power||0);
- if(type==="blue"&&Date.now()<gameState.blueUntil)gain*=2+(gameState.upgrades.blue_power||0);
+ if(Date.now()<gameState.blueUntil)gain*=2+(gameState.upgrades.blue_power||0);
  gain*=1+0.1*(gameState.prestige.upgrades.p_sp||0);
  if(type==="gold")gain*=1+0.15*(gameState.prestige.upgrades.p_gold||0);
  if(type==="purple")gain*=1+0.15*(gameState.prestige.upgrades.p_purple||0);
@@ -136,7 +136,7 @@ window.executeCharacterWrite=function(ch,type){
 };
 window.gameLoop=function(){
  if(!gameState.settings.autoEnabled)return;const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
- if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
+ if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
  if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return;
  msCounter+=100;autoACounter+=100;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
@@ -188,12 +188,13 @@ window.renderPrestigeTree=function(){
  prestigeSkills.forEach(s=>{const lvl=gameState.prestige.upgrades[s.id]||0,locked=s.req&&(gameState.prestige.upgrades[s.req]||0)<1,n=document.createElement("div");n.className="prestige-node";n.innerHTML="<b>"+s.name+" ("+lvl+"/"+s.max+")</b><p>"+s.desc+"</p><small>"+(locked?"Voraussetzung: "+s.req:lvl>=s.max?"MAX":s.cost+" Prestige-Punkte")+"</small>";
  if(!locked&&lvl<s.max){const b=document.createElement("button");b.className="btn";b.textContent="Freischalten";b.onclick=()=>{if(gameState.prestige.points<s.cost)return showToast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=s.cost;gameState.prestige.upgrades[s.id]=lvl+1;saveGameState();renderPrestigeTree();};n.appendChild(b);}root.appendChild(n);});
 };
+window.finishText=function(){gameState.stats.textsFinished++;gameState.sp+=50;gameState.totalSpEarned+=50;showToast("Text abgeschlossen! +50 SP");checkAchievements();resetCurrentText();};
 window.doPrestige=function(){
- if(gameState.totalSpEarned<10000)return showToast("Benötigt mindestens 10.000 verdiente SP.");
- if(!confirm("Prestige setzt SP, normale Upgrades und Textfortschritt zurück. Erfolge und Prestige-Talente bleiben erhalten. Fortfahren?"))return;
- const gain=Math.max(1,Math.floor(Math.sqrt(gameState.totalSpEarned/10000)));
+ if(gameState.sp<10000)return showToast("Benötigt mindestens 10.000 aktuelle SP.");
+ if(!confirm("Prestige setzt aktuelle SP, normale Upgrades und Textfortschritt zurück. Lebenszeitstatistik, Erfolge und Prestige-Talente bleiben erhalten. Fortfahren?"))return;
+ const gain=Math.max(1,Math.floor(Math.sqrt(gameState.sp/10000)));
  gameState.prestige.points+=gain;gameState.prestige.level++;gameState.prestige.totalPrestiges++;
- gameState.sp=0;gameState.totalSpEarned=0;gameState.textProgress=0;gameState.history=[];gameState.upgrades={};gameState.freeStock={};gameState.freeProgress={};
+ gameState.sp=0;gameState.textProgress=0;gameState.history=[];gameState.upgrades={};gameState.freeStock={};gameState.freeProgress={};
  saveGameState();buildSkillTreeUI();updateAllDisplays();showToast("Prestige! +"+gain+" Punkte");
 };
 
