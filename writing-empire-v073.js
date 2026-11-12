@@ -25,40 +25,38 @@ function addModifiers(){
 }
 function fixInput(){
  const kb=$("virtual-keyboard");
- if(!kb||kb.__weTouchInputBound)return;
- kb.__weTouchInputBound=true;
- let activePointer=null;
- kb.addEventListener("pointerdown",e=>{
-  if(e.pointerType!=="touch"&&e.pointerType!=="pen")return;
+ if(!kb||kb.__weClickInputBound)return;
+ kb.__weClickInputBound=true;
+ // Use the browser's normal click activation for taps. Pointer-up handling
+ // previously swallowed the synthetic click on iOS, making keys appear dead.
+ kb.addEventListener("click",e=>{
   const key=e.target.closest(".key");
-  if(!key)return;
-  activePointer={id:e.pointerId,key};
- },{passive:true});
- kb.addEventListener("pointerup",e=>{
-  if(!activePointer||activePointer.id!==e.pointerId)return;
-  const key=activePointer.key;
-  activePointer=null;
-  if(e.target.closest(".key")!==key)return;
-  key.__weIgnoreTouchClick=true;
-  setTimeout(()=>{key.__weIgnoreTouchClick=false;},500);
-  if(key.id==="we-shift"||key.id==="we-caps"){key.onclick?.();return;}
-  if(key.id==="key-SPACE"){window.handleKeyInput(" ");return;}
+  if(!key||!kb.contains(key))return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if(key.id==="we-shift"||key.id==="we-caps"){
+   key.onclick?.();
+   return;
+  }
+  if(key.id==="key-SPACE"){
+   window.handleKeyInput(" ");
+   return;
+  }
   const raw=key.id.slice(4);
-  if(raw==="?123"){window.handleKeyInput("?123");return;}
+  if(raw==="?123"){
+   window.handleKeyInput("?123");
+   return;
+  }
   const upper=!!gameState.settings.shift!==!!gameState.settings.capsLock;
   const ch=/^[A-ZÄÖÜ]$/i.test(raw)?(upper?raw.toUpperCase():raw.toLowerCase()):raw;
   window.handleKeyInput(ch);
   if(gameState.settings.shift){
    gameState.settings.shift=false;
    $("we-shift")?.classList.remove("active");
+   const state=$("we-case-state");
+   if(state)state.textContent="Schreibweise: "+(!!gameState.settings.capsLock?"GROSS":"klein");
+   window.saveGameState();
   }
- },{passive:true});
- kb.addEventListener("pointercancel",e=>{
-  if(activePointer?.id===e.pointerId)activePointer=null;
- },{passive:true});
- kb.addEventListener("click",e=>{
-  const key=e.target.closest(".key");
-  if(key?.__weIgnoreTouchClick){e.preventDefault();e.stopImmediatePropagation();}
  },true);
 }
 function prestigeTree(){const host=$("we-p-upgrades");if(!host)return;host.innerHTML='<div id="we-prestige-tree"></div>';const t=$("we-prestige-tree"),data=[["p_sp","Imperiale Tinte","+10 % SP",1,10,2,1],["p_gold","Goldmacht","+15 % Gold-SP",2,5,1,2],["p_purple","Purpurmacht","+15 % Purpur-SP",2,5,3,2],["p_start","Reicher Neustart","+250 Start-SP",3,5,1,3],["p_auto","Maschinenwissen","Schnellere Automatik",3,5,3,3],["p_blue","Blaue Krone","Stärkere blaue Boni",4,5,2,3],["p_discount","Königlicher Rabatt","5 % Rabatt",5,5,1,4],["p_goldchance","Goldene Ader","Häufigere Goldzeichen",4,5,3,4],["p_purplechance","Purpurne Ader","Häufigere Purpurzeichen",4,5,2,5],["p_capacity","Königlicher Tintentank","Mehr Tinte nach Prestige",5,5,2,6]];data.forEach(([id,name,desc,cost,max,col,row])=>{const lv=gameState.prestige.upgrades[id]||0,n=document.createElement("div");n.className="we72-node";n.style.gridColumn=col;n.style.gridRow=row;const h=document.createElement("b"),p=document.createElement("p"),small=document.createElement("small");h.textContent=name+" "+lv+"/"+max;p.textContent=desc;small.textContent=lv===max?"MAX":cost*(lv+1)+" Prestige-Punkte";n.append(h,p,small);if(lv<max){const b=document.createElement("button");b.className="btn";b.textContent="Kaufen";b.onclick=()=>{const price=cost*(lv+1);if(gameState.prestige.points<price)return showToast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=price;gameState.prestige.upgrades[id]=lv+1;window.saveGameState();prestigeTree();addPrestigeConnectors();};n.appendChild(b);}t.appendChild(n);});}
