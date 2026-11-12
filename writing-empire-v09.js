@@ -1,9 +1,9 @@
-/* Writing Empire v0.9 – stability, navigation, automation and admin fixes */
+/* Writing Empire v1.0 – stability, navigation, automation and admin fixes */
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
 const css=`
-/* v0.9 consistent light theme */
+/* v1.0 consistent light theme */
 body.we-paper,body.we-paper *{color-scheme:light}
 body.we-paper #admin-panel,body.we-paper .admin-section,body.we-paper .we-stat,body.we-paper .we-prestige-card,body.we-paper .achievement-card,body.we-paper .skill-node,body.we-paper .auth-card,body.we-paper input,body.we-paper textarea,body.we-paper select,body.we-paper .tab-content,body.we-paper .paper-container,body.we-paper #we-theme-music{background:#f8f5eb!important;color:#34443c!important;border-color:#d7d0bd!important}
 body.we-paper .skill-node p,body.we-paper .achievement-card p,body.we-paper small,body.we-paper .text-muted{color:#58675f!important}
@@ -204,7 +204,7 @@ function install(){
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
  setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAchievementProgress();},500);
- const version=[...document.querySelectorAll("header span")].find(x=>/v0\./.test(x.textContent));if(version)version.textContent="v0.9";
+ const version=[...document.querySelectorAll("header span")].find(x=>/v0\./.test(x.textContent));if(version)version.textContent="v1.0";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
 })();
