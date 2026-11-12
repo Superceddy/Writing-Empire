@@ -82,19 +82,6 @@ function repairAutomation(){
  const sw=$("switch-auto");
  if(sw&&!sw.__we09){sw.__we09=true;sw.addEventListener("change",()=>{gameState.settings.autoEnabled=sw.checked;saveGameState();});}
  if(sw&&sw.checked!==!!gameState.settings.autoEnabled)sw.checked=!!gameState.settings.autoEnabled;
- if(!window.__we09AutoLoop){
-  window.__we09AutoLoop=true;
-  let last=0;
-  setInterval(()=>{
-   const enabled=!!gameState.settings.autoEnabled;
-   const unlocked=!!gameState.upgrades.unlock_auto||!!gameState.upgrades.auto_a;
-   if(!enabled||!unlocked)return;
-   if(typeof gameLoop==="function"){
-    const now=Date.now();if(now-last<100)return;last=now;
-    try{gameLoop();}catch(e){console.warn("v0.9 automation:",e);}
-   }
-  },100);
- }
  const label=$("we-auto-cooldown");
  if(label&&gameState.settings.autoEnabled&&((gameState.upgrades.unlock_auto||0)>0||(gameState.upgrades.auto_a||0)>0))label.textContent="Automatik aktiv";
 }
@@ -168,13 +155,13 @@ function fixAdmin(){
   const section=$("admin-progress")||panel;
   if($("we-v09-all-prestige"))return;
   const b=document.createElement("button");b.id="we-v09-all-prestige";b.className="btn";b.textContent="Alle Prestige-Upgrades maximieren";
-  b.onclick=()=>{if(!confirm("Alle Prestige-Upgrades maximieren?"))return;const costs={p_sp:10,p_gold:5,p_purple:5,p_start:5,p_auto:5,p_blue:5,p_discount:5,p_goldchance:5,p_purplechance:5,p_capacity:5,p_skilltree:1};Object.entries(costs).forEach(([id,max])=>gameState.prestige.upgrades[id]=max);gameState.prestige.points=0;renderPrestige?.();updateAllDisplays();saveGameState();};
+  b.onclick=()=>{if(!confirm("Alle Prestige-Upgrades maximieren?"))return;const costs={p_sp:10,p_gold:5,p_purple:5,p_start:5,p_auto:5,p_blue:5,p_discount:5,p_goldchance:5,p_purplechance:5,p_capacity:5,p_skilltree:1};Object.entries(costs).forEach(([id,max])=>gameState.prestige.upgrades[id]=max);gameState.prestige.points=0;updateAllDisplays();saveGameState();};
   section.appendChild(b);
  };
  addAllPrestige();
  if(!window.__we09AdminFns){
   window.__we09AdminFns=true;
-  window.adminUnlockAllAchievements=function(){
+  window.adminGrantPrestige=function(){const input=$("admin-pp-value");const amount=Math.max(0,Number(input?.value)||0);gameState.prestige=gameState.prestige||{points:0,upgrades:{}};gameState.prestige.points+=amount;updateAllDisplays();saveGameState();toast("Prestige-Punkte vergeben.");};\n  window.adminSetSP=function(){const input=$("admin-sp-value");gameState.sp=Math.max(0,Number(input?.value)||0);updateAllDisplays();saveGameState();toast("SP gesetzt.");};\n  window.adminUnlockAllAchievements=function(){
    ACHIEVEMENTS.forEach(a=>{if(!gameState.achievementsUnlocked.includes(a.id)){gameState.achievementsUnlocked.push(a.id);gameState.sp+=a.reward||0;gameState.totalSpEarned+=a.reward||0;}});
    saveGameState();renderAchievements();updateAllDisplays();toast("Alle Erfolge freigeschaltet.");
   };
@@ -197,7 +184,7 @@ function install(){
  if(window.__weV09)return;window.__weV09=true;
  gameState.settings=Object.assign({autoEnabled:false},gameState.settings||{});
  allowTypingIntoFields();renameTabs();addSkills();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();
- const oldUpdate=window.updateAllDisplays;
+ const oldBuy=window.buyUpgrade;if(typeof oldBuy==="function"&&!window.__we09AutoPurchase){window.__we09AutoPurchase=true;window.buyUpgrade=function(id,cost){oldBuy(id,cost);if(id==="unlock_auto"||id==="auto_a"){gameState.settings.autoEnabled=true;const sw=$("switch-auto");if(sw)sw.checked=true;saveGameState();}};}\n const oldUpdate=window.updateAllDisplays;
  if(typeof oldUpdate==="function"&&!window.__we09FinalUpdate){
   window.__we09FinalUpdate=true;
   window.updateAllDisplays=function(){oldUpdate();showPrestigePoints();unifyStats();refreshCountdown();repairAchievementProgress();};
