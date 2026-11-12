@@ -150,7 +150,7 @@ const effect={
 };
 function describeSkill(s,l){
  const id=s.id;
- if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id]&&!["imperial_script","blue_power","blue_duration","auto_speed","gold_frequency","gold_capacity","purple_frequency","streak_power","special_power","gold_power"].includes(id))return window.__we08SkillEnglish[id][1];
+ if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id]&&!["imperial_script","blue_power","blue_duration","auto_speed","free_speed","gold_frequency","gold_capacity","purple_frequency","streak_power","special_power","gold_power"].includes(id))return window.__we08SkillEnglish[id][1];
  if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
  if(id==="blue_unlock")return gameState.settings.language==="en"?"Unlocks blue multiplier characters. They appear every 75 text positions.":"Schaltet blaue Multiplikator-Zeichen frei. Sie erscheinen alle 75 Textpositionen.";
  if(id==="gold_frequency"||id==="gold_capacity")return gameState.settings.language==="en"?"Gold characters appear every "+effect[id].v(l)+" text positions.":"Goldzeichen erscheinen alle "+effect[id].v(l)+" Textpositionen.";
@@ -163,23 +163,23 @@ function describeSkill(s,l){
  if(["auto_a","auto_e","auto_s","auto_t"].includes(id))return gameState.settings.language==="en"?"Automatically types "+id.slice(-1).toUpperCase()+" when it is next in the text.":"Schreibt das Zeichen "+id.slice(-1).toUpperCase()+" automatisch, sobald es im Text an der Reihe ist.";
  if(id==="auto_vowels")return gameState.settings.language==="en"?"Automatically types A, E, I, O and U. Requires Automatic A and Automatic E.":"Schreibt A, E, I, O und U automatisch. Benötigt Automatik A und Automatik E.";
  if(id==="auto_speed")return gameState.settings.language==="en"?"Automatic typing interval: "+effect[id].v(l)+" ms.":"Automatikintervall: "+effect[id].v(l)+" ms.";
- if(id==="gold_frequency"||id==="gold_capacity")return (gameState.settings.language==="en"?"Gold characters appear every ":"Goldzeichen erscheinen alle ")+effect[id].v(l)+" progress steps.";
+ if(id==="free_speed")return gameState.settings.language==="en"?"A gold character is earned after "+effect[id].v(l)+" progress steps (minimum 2).":"Ein Goldzeichen entsteht nach "+effect[id].v(l)+" Fortschrittsschritten (mindestens 2).";
+ if(id==="gold_frequency"||id==="gold_capacity")return (gameState.settings.language==="en"?"Gold characters appear every ":"Goldzeichen erscheinen alle ")+effect[id].v(l)+(gameState.settings.language==="en"?" text positions.":" Textpositionen.");;
  if(id==="purple_frequency")return (gameState.settings.language==="en"?"Purple characters appear every ":"Purpurzeichen erscheinen alle ")+effect[id].v(l)+" text positions.";
  if(id==="streak_power")return (gameState.settings.language==="en"?"Each correct character grants +":"Jedes fehlerfreie Zeichen gibt +")+l+" SP.";
  if(id==="special_power")return (gameState.settings.language==="en"?"Each special character grants +":"Jedes Sonderzeichen gibt +")+(2*l)+" SP.";
  if(id==="purple_bonus")return gameState.settings.language==="en"?"Every fifth manually typed character becomes purple and grants +5 bonus SP. Requires Ink tank.":"Jeder fünfte manuell geschriebene Buchstabe wird lila und bringt +5 Bonus-SP. Benötigt Tintentank.";
  if(id==="imperial_script")return gameState.settings.language==="en"?"Prestige talent: each manually typed character grants an extra "+(2*l)+" SP.":"Prestige-Talent: Jeder manuell geschriebene Buchstabe bringt zusätzlich "+(2*l)+" SP.";
  const d=effect[id];if(!d)return s.desc||"";
- if(id==="free_speed")return "Goldzeichen entstehen nach "+d.v(l)+" Fortschrittsschritten. Minimum: 2.";
- if(id==="blue_power")return d.unit+": "+(2+l).toFixed(1)+"×.";
- if(id==="blue_duration")return d.unit+": +"+d.v(l).toFixed(1)+" Sekunden."; 
+ if(id==="blue_power")return gameState.settings.language==="en"?"Blue character multiplier: "+(2+l).toFixed(1)+"×.":"Multiplikator für blaue Zeichen: "+(2+l).toFixed(1)+"×.";
+ if(id==="blue_duration")return gameState.settings.language==="en"?"Adds "+d.v(l).toFixed(1)+" seconds to the blue bonus duration.":"Verlängert den blauen Bonus um "+d.v(l).toFixed(1)+" Sekunden."; 
  if(id==="auto_speed")return d.unit+": "+d.v(l)+" ms.";
  return d.unit+": +"+d.v(l)+".";
 }
 function previewSkill(s,l){
  if(s.maxLevel<=1||!effect[s.id])return "";
  const d=effect[s.id],a=d.v(l),b=d.v(Math.min(s.maxLevel,l+1));
- const fmt=v=>s.id==="blue_power"?v.toFixed(1)+"×":s.id==="blue_duration"?v.toFixed(1)+" s":s.id==="auto_speed"?v+" ms":s.id==="gold_frequency"||s.id==="gold_capacity"||s.id==="purple_frequency"?v+" Zeichen":s.id==="free_speed"?v+" Schritte":v+"";
+ const fmt=v=>s.id==="blue_power"?v.toFixed(1)+"×":s.id==="blue_duration"?v.toFixed(1)+" s":s.id==="auto_speed"?v+" ms":s.id==="gold_frequency"||s.id==="gold_capacity"||s.id==="purple_frequency"?v+(gameState.settings.language==="en"?" characters":" Zeichen"):s.id==="free_speed"?v+(gameState.settings.language==="en"?" steps":" Schritte"):v+"";
  return (gameState.settings.language==="en"?"Now: ":"Gerade: ")+fmt(a)+(gameState.settings.language==="en"?" · Next: ":" · Danach: ")+fmt(b);
 }
 function configureSkills(){
