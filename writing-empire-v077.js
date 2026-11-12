@@ -126,6 +126,13 @@ function finalTouchups(){
 window.addEventListener("load",()=>setTimeout(finalTouchups,350));
 
 // v0.7.7 stability and input corrections
+ // Keep physical keyboard input enabled, but ignore modifier/navigation keys and avoid browser shortcuts.
+ window.handleRealKeyDown=function(e){
+  if(e.key==="Escape"){if(typeof closeAdmin==="function")closeAdmin();return;}
+  if(["Shift","CapsLock","Tab","Control","Alt","Meta","Dead"].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key.length===1||e.key===" "){e.preventDefault();window.handleKeyInput(e.key);}
+ };
+
 function patchV077(){
  const oldToast=window.showToast;
  if(oldToast)window.showToast=function(message){if(typeof message==="string"&&message.includes("Serie zurückgesetzt"))return;return oldToast(message);};
@@ -133,12 +140,6 @@ function patchV077(){
  if(oldUpdate&&!window.__weV077UpdateWrapped){window.__weV077UpdateWrapped=true;window.updateAllDisplays=function(){oldUpdate();renderSeries();renderStats();renderPrestige();};}
  window.clearSavegame=deleteSave;
  window.adminResetAchievements=function(){askInGame("Erfolge zurücksetzen","Alle freigeschalteten Erfolge und ihre Fortschrittswerte werden zurückgesetzt.",()=>{gameState.achievementsUnlocked=[];saveGameState();renderAchievements();updateAllDisplays();toast("Erfolge zurückgesetzt.");});};
- // Keep physical keyboard input enabled, but ignore modifier/navigation keys and avoid browser shortcuts.
- window.handleRealKeyDown=function(e){
-  if(e.key==="Escape"){if(typeof closeAdmin==="function")closeAdmin();return;}
-  if(["Shift","CapsLock","Tab","Control","Alt","Meta","Dead"].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey)return;
-  if(e.key.length===1||e.key===" "){e.preventDefault();window.handleKeyInput(e.key);}
- };
 }
 
 window.addEventListener("load",()=>setTimeout(patchV077,500));
