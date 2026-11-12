@@ -253,7 +253,7 @@ function addPrestigeProgress(){
  if(!unlock){unlock=document.createElement("div");unlock.id="we-v08-prestige-unlock";unlock.className="we-prestige-card";$("we-p-upgrades")?.appendChild(unlock);}
  const bought=!!gameState.prestige.upgrades.p_skilltree;
  unlock.innerHTML=gameState.settings.language==="en"?"<b>Imperial talent</b><p>Unlocks “Imperial writing” in the upgrade tree.</p><small>"+(bought?"Unlocked":"Cost: 4 prestige points")+"</small>":"<b>Imperiales Talent</b><p>Schaltet „Imperiale Schreibkunst“ im Talentbaum frei.</p><small>"+(bought?"Freigeschaltet":"Kosten: 4 Prestige-Punkte")+"</small>";
- if(!bought){const btn=document.createElement("button");btn.className="btn";btn.textContent=gameState.settings.language==="en"?"Unlock":"Freischalten";btn.onclick=()=>{if(gameState.prestige.points<4)return toast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=4;gameState.prestige.upgrades.p_skilltree=1;saveGameState();renderSkillTree();addPrestigeProgress();toast("Imperiales Talent freigeschaltet.");};unlock.appendChild(btn);}
+ if(!bought){const btn=document.createElement("button");btn.className="btn";btn.textContent=gameState.settings.language==="en"?"Unlock":"Freischalten";btn.onclick=()=>{if(gameState.prestige.points<4)return showToast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=4;gameState.prestige.upgrades.p_skilltree=1;saveGameState();renderSkillTree();addPrestigeProgress();showToast("Imperiales Talent freigeschaltet.");};unlock.appendChild(btn);}
 }
 function renderStatsV08(){
  const tab=$("tab-stats");if(!tab)return;
