@@ -31,19 +31,11 @@ function allowTypingIntoFields(){
  };
 }
 function renameTabs(){
- const names={"tab-prestige":"Prestige","tab-stats":"Statistiken","tab-config":"Einstellungen"};
- Object.entries(names).forEach(([id,label])=>{
-  const nav=document.querySelector('nav button[onclick*="'+id+'"]')||document.querySelector('nav button[data-tab="'+id+'"]');
-  if(nav)nav.textContent=label;
- });
- const navs=[...document.querySelectorAll("nav button")];
- navs.forEach(b=>{
-  const s=b.textContent.trim().toLowerCase();
-  if(s==="statistiken"&&document.getElementById("tab-prestige")&&b.getAttribute("onclick")?.includes("prestige"))b.textContent="Prestige";
-  if(s==="einstellungen"&&b.getAttribute("onclick")?.includes("stats"))b.textContent="Statistiken";
- });
+ const prestigeNav=$("we-prestige-nav");if(prestigeNav)prestigeNav.textContent="👑 Prestige";
+ const statsNav=document.querySelector('nav button[onclick*="tab-stats"]');if(statsNav)statsNav.textContent="📊 Statistiken";
+ const settingsNav=document.querySelector('nav button[onclick*="tab-config"]');if(settingsNav)settingsNav.textContent="⚙ Einstellungen";
  const p=$("tab-prestige");if(p){const h=p.querySelector("h2");if(h)h.textContent="Prestige";}
- const s=$("tab-stats");if(s){const h=s.querySelector("h2");if(h)h.textContent="Statistiken";}
+ const st=$("tab-stats");if(st){const h=st.querySelector("h2");if(h)h.textContent="Statistiken";}
 }
 function showPrestigePoints(){
  const root=$("tab-prestige");if(!root)return;
@@ -90,28 +82,10 @@ function addSkills(){
  const add=(id,label,desc,cost,group,maxLevel,requires,color)=>{if(!SKILL_TREE.some(s=>s.id===id))SKILL_TREE.push({id,label,desc,cost,maxLevel,requires,row:90+SKILL_TREE.length,group,color});};
  add("blue_precision","Blaue Präzision","Erhöht den Multiplikator blauer Zeichen um 0,25 je Stufe.",3500,"Blaue Multiplikatoren",10,["blue_power"],"blue");
  add("blue_duration_plus","Blaue Resonanz","Verlängert die Wirkung blauer Zeichen um 1 Sekunde je Stufe.",5000,"Blaue Multiplikatoren",8,["blue_power"],"blue");
- add("green_focus_v09","Grüner Fokus","Jedes 5. korrekt geschriebene Zeichen gibt zusätzliche Schreibpunkte.",2800,"Grüne Zeichen",10,["base_click"],"green");
- add("green_chain_v09","Grüne Serie","Verstärkt den Bonus bei langen fehlerfreien Serien.",4200,"Grüne Zeichen",10,["green_focus_v09"],"green");
  if(typeof window.buildSkillTreeUI==="function")window.buildSkillTreeUI();
 }
-function upgradeGroupFilter(){
- const tabs=$("we-group-tabs");if(!tabs||tabs.__we09)return;tabs.__we09=true;
- const buttons=[...tabs.querySelectorAll("button")];
- if(!buttons.some(b=>b.textContent.trim()==="Grüne Zeichen")){const g=document.createElement("button");g.textContent="Grüne Zeichen";tabs.appendChild(g);buttons.push(g);}
- // Keep the full tree visible by default; only filter when a group is deliberately selected.
- buttons.forEach(b=>{
-  const old=b.onclick;
-  b.addEventListener("click",()=>{
-   const selected=b.textContent.trim();
-   const root=$("skilltree-container");if(!root)return;
-   root.querySelectorAll(".skill-node").forEach(node=>{
-    const sk=SKILL_TREE.find(x=>x.id===node.dataset.skillId);
-    node.classList.toggle("we-hidden",selected!=="Alle"&&sk?.group!==selected);
-   });
-   root.querySelectorAll(".skill-row").forEach(row=>row.classList.toggle("we-hidden",![...row.querySelectorAll(".skill-node")].some(n=>!n.classList.contains("we-hidden"))));
-  });
- });
-}
+function upgradeGroupFilter(){ /* Group tabs are rendered by the v0.8 skill-tree renderer. */ }
+
 function fixUpgradeCards(){
  document.querySelectorAll(".skill-node").forEach(node=>{
   const cost=node.querySelector(".cost");if(!cost)return;
@@ -188,10 +162,8 @@ function fixBlueMultiplier(){
   window.executeCharacterWrite=function(ch,type){const before=gameState.sp;old(ch,type);if(type==="blue"){const extra=Math.floor((gameState.upgrades.blue_precision||0)*.25*10)/10;const gain=Math.max(0,Math.floor((gameState.sp-before)*extra));gameState.sp+=gain;gameState.totalSpEarned+=gain;}};
  }
 }
-function greenUpgradeEffect(){
- const old=window.handleKeyInput;if(typeof old!=="function"||window.__we09GreenWrapped)return;window.__we09GreenWrapped=true;
- window.handleKeyInput=function(ch){const before=gameState.textProgress;old(ch);if(gameState.textProgress<=before)return;const streak=gameState.stats.errorFreeStreak||0;let bonus=0;bonus+=(gameState.upgrades.green_focus_v09||0)*(streak>0&&streak%5===0?2:0);bonus+=(gameState.upgrades.green_chain_v09||0)*(streak>0&&streak%10===0?5:0);if(bonus>0){gameState.sp+=bonus;gameState.totalSpEarned+=bonus;updateAllDisplays();saveGameState();}};
-}
+function greenUpgradeEffect(){ /* Green characters are a real character type in v0.6. */ }
+
 function install(){
  if(window.__weV09)return;window.__weV09=true;
  gameState.settings=Object.assign({autoEnabled:false},gameState.settings||{});
@@ -204,7 +176,7 @@ function install(){
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
  setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAchievementProgress();},500);
- const version=[...document.querySelectorAll("header span")].find(x=>/v0\./.test(x.textContent));if(version)version.textContent="v1.0";
+ const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.1";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
 })();
