@@ -314,6 +314,7 @@ function translateVisibleText(en){
    else if(!en)node.nodeValue=original;
   }
  });
+ document.querySelectorAll("#admin-panel input[placeholder],#admin-panel textarea[placeholder],#tab-config input[placeholder],#tab-config textarea[placeholder]").forEach(el=>{if(!el.dataset.v08Placeholder)el.dataset.v08Placeholder=el.placeholder;const original=el.dataset.v08Placeholder;el.placeholder=en?(uiEnglish[original]||original):original;});
 }
 
 function applyLanguage(){
