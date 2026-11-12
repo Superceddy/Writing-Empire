@@ -86,7 +86,7 @@ function repairAutomation(){
  if(label&&gameState.settings.autoEnabled&&((gameState.upgrades.unlock_auto||0)>0||(gameState.upgrades.auto_a||0)>0))label.textContent="Automatik aktiv";
 }
 function addSkills(){
- if(!Array.isArray(window.SKILL_TREE))return;
+ if(!Array.isArray(SKILL_TREE))return;
  const add=(id,label,desc,cost,group,maxLevel,requires,color)=>{if(!SKILL_TREE.some(s=>s.id===id))SKILL_TREE.push({id,label,desc,cost,maxLevel,requires,row:90+SKILL_TREE.length,group,color});};
  add("blue_precision","Blaue Präzision","Erhöht den Multiplikator blauer Zeichen um 0,25 je Stufe.",3500,"Blaue Multiplikatoren",10,["blue_power"],"blue");
  add("blue_duration_plus","Blaue Resonanz","Verlängert die Wirkung blauer Zeichen um 1 Sekunde je Stufe.",5000,"Blaue Multiplikatoren",8,["blue_power"],"blue");
@@ -168,8 +168,12 @@ function fixAdmin(){
   window.adminGrantAllPrestige=function(){gameState.prestige=gameState.prestige||{points:0,upgrades:{}};gameState.prestige.points+=100000;updateAllDisplays();saveGameState();toast("Prestige-Punkte vergeben.");};
  }
 }
+function unlockExtraAchievements(){
+ const values={purple_chars:gameState.stats.purpleChars||0,blue_chars:gameState.stats.blueChars||0,best_streak:gameState.stats.bestStreak||0};
+ ACHIEVEMENTS.forEach(a=>{const val=values[a.type];if(val===undefined||val<a.target||gameState.achievementsUnlocked.includes(a.id))return;gameState.achievementsUnlocked.push(a.id);gameState.sp+=a.reward||0;gameState.totalSpEarned+=a.reward||0;});
+}
 function repairAchievementProgress(){
- if(!Array.isArray(window.ACHIEVEMENTS))return;
+ if(!Array.isArray(ACHIEVEMENTS))return;
  const vals={total_chars:()=>gameState.stats.totalChars||0,total_sp:()=>gameState.totalSpEarned||0,upgrades_bought:()=>Object.values(gameState.upgrades||{}).reduce((a,b)=>a+b,0),auto_unlocked:()=>gameState.upgrades.unlock_auto?1:0,texts_finished:()=>gameState.stats.textsFinished||0,auto_chars:()=>gameState.stats.autoChars||0,gold_chars:()=>gameState.stats.goldChars||0,purple_chars:()=>gameState.stats.purpleChars||0,blue_chars:()=>gameState.stats.blueChars||0,best_streak:()=>gameState.stats.bestStreak||0};
  ACHIEVEMENTS.forEach(a=>{const val=vals[a.type]?.()??0;const card=[...($("achievements-display")?.querySelectorAll(".achievement-card")||[])].find(c=>c.querySelector("h4")?.textContent===a.name);if(card){const n=card.children[2],f=card.querySelector(".progress-fill");if(n)n.textContent=Math.min(val,a.target)+" / "+a.target;if(f)f.style.width=Math.min(100,val/a.target*100)+"%";card.classList.toggle("unlocked",gameState.achievementsUnlocked.includes(a.id));}});
 }
@@ -190,7 +194,7 @@ function install(){
   window.updateAllDisplays=function(){oldUpdate();showPrestigePoints();unifyStats();refreshCountdown();repairAchievementProgress();};
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
- setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();repairAchievementProgress();},500);
+ setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAchievementProgress();},500);
  const version=[...document.querySelectorAll("header span")].find(x=>/v0\./.test(x.textContent));if(version)version.textContent="v0.9";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
