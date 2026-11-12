@@ -377,7 +377,7 @@ function sortAchievements(){
 function install(){
  if(window.__weV08)return;window.__weV08=true;
  gameState.settings=Object.assign({shift:false,capsLock:false,language:"de",musicEnabled:true,musicVolume:.025,weV08Theme:"paper",weV08Nav:"dark"},gameState.settings||{});
- addTextOptions();configureSkills();sortAchievements();
+ addTextOptions();["Ü","Ö","Ä","ß"].forEach(k=>{if(!KEYBOARD_LAYOUT.includes(k))KEYBOARD_LAYOUT.push(k);});configureSkills();sortAchievements();
  const oldAchievements=window.renderAchievements;window.renderAchievements=function(){oldAchievements();const cards=[...$("achievements-display").querySelectorAll(".achievement-card")];ACHIEVEMENTS.forEach((a,i)=>{const card=cards[i];if(!card)return;let value=0;if(a.type==="best_streak")value=gameState.stats.bestStreak||0;if(a.type==="purple_chars")value=gameState.stats.purpleChars||0;if(a.type==="blue_chars")value=gameState.stats.blueChars||0;const count=card.children[2],fill=card.querySelector(".progress-fill");if(count)count.textContent=Math.min(value,a.target)+" / "+a.target;if(fill)fill.style.width=Math.min(100,value/a.target*100)+"%";});};
  window.initKeyboard=initKeyboardV08;initKeyboardV08();
  window.buildSkillTreeUI=renderSkillTree;
