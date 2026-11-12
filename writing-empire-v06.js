@@ -126,7 +126,7 @@ window.executeCharacterWrite=function(ch,type){
  if(type==="manual"||type==="purple"||type==="blue"||type==="green")gameState.stats.manualChars++;
  if(type==="auto")gameState.stats.autoChars++;if(type==="gold")gameState.stats.goldChars++;
  if(type==="purple")gameState.stats.purpleChars++;if(type==="blue")gameState.stats.blueChars++;if(type==="green")gameState.stats.greenChars=(gameState.stats.greenChars||0)+1;
- if(type==="green")gameState.greenBoostUntil=gameState.textProgress+8+4*(gameState.upgrades.green_bloom||0);
+ if(type==="green")gameState.greenBoostUntil=gameState.textProgress+9+4*(gameState.upgrades.green_bloom||0);
  let gain=1;if(type==="manual"||type==="purple"||type==="blue"||type==="green")gain+=gameState.upgrades.base_click||0;
  if(type==="green")gain+=6+2*(gameState.upgrades.green_power||0);else if(gameState.greenBoostUntil>gameState.textProgress)gain+=1+(gameState.upgrades.green_bloom||0);
  if(type==="purple")gain+=5+2*(gameState.upgrades.purple_power||0);
