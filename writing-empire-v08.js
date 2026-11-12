@@ -57,6 +57,7 @@ function makeKey(label,code,kind){
 function updateKeyboard(){
  const kb=$("virtual-keyboard");if(!kb)return;
  const enabled=caseUnlocked(),upper=!!gameState.settings.capsLock!==!!gameState.settings.shift;
+ if(kb.dataset.caseUnlocked!==String(enabled)){initKeyboardV08();return;}
  kb.querySelectorAll(".modifier").forEach(b=>b.style.display=enabled?"":"none");
  kb.querySelectorAll("button").forEach(b=>{
   if(/^[A-ZÄÖÜ]$/.test(b.dataset.key||""))b.textContent=enabled?(upper?b.dataset.key:b.dataset.key.toLowerCase()):b.dataset.key.toLowerCase();
@@ -66,7 +67,7 @@ function updateKeyboard(){
  state.textContent=enabled?"Schreibweise: "+(upper?"GROSS":"klein"):"Groß-/Kleinschreibung noch gesperrt";
 }
 function initKeyboardV08(){
- const kb=$("virtual-keyboard");if(!kb)return;kb.innerHTML="";
+ const kb=$("virtual-keyboard");if(!kb)return;kb.innerHTML="";kb.dataset.caseUnlocked=String(caseUnlocked());
  const rows=[["Q","W","E","R","T","Z","U","I","O","P","Ü"],["A","S","D","F","G","H","J","K","L","Ö","Ä"],["Y","X","C","V","B","N","M",",",".","ß","?123"]];
  rows.forEach((keys,i)=>{const row=document.createElement("div");row.className="we-key-row";if(i===1)row.style.padding="0 3%";if(i===2)row.style.padding="0 1%";
   keys.forEach(k=>{const b=makeKey(k,k);b.onclick=()=>{
@@ -102,32 +103,35 @@ const effect={
  purple_power:{unit:"Zusatz-SP pro Purpurzeichen",v:l=>2*l},
  gold_power:{unit:"Zusatz-SP pro Goldzeichen",v:l=>3*l},
  blue_power:{unit:"Multiplikator für blaue Zeichen",v:l=>1+l},
- blue_duration:{unit:"Dauer des blauen Bonus",v:l=>5+1.5*l},
+ blue_duration:{unit:"Zusätzliche Dauer des blauen Bonus",v:l=>1.5*l},
+ auto_speed:{unit:"Automatikintervall",v:l=>Math.max(200,3000-500*l)},
  green_focus:{unit:"Bonus-SP je 5 fehlerfreie Zeichen",v:l=>l},
  red_rare:{unit:"Bonus-SP für Q, X, Y, Z und J",v:l=>5*l},
  long_streak:{unit:"Bonus-SP je 10 fehlerfreie Zeichen",v:l=>l}
 };
 function describeSkill(s,l){
  const id=s.id;
- if(id==="unlock_free")return "Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
- if(id==="unlock_auto")return "Schaltet die automatische Zeicheneingabe frei. Voraussetzung: Vorausschauende Tastatur.";
- if(id==="keyboard_hint")return "Markiert auf der Bildschirmtastatur das Zeichen, das als Nächstes geschrieben werden muss.";
- if(["auto_a","auto_e","auto_s","auto_t"].includes(id))return "Schreibt das Zeichen "+id.slice(-1).toUpperCase()+" automatisch, sobald es im Text an der Reihe ist.";
- if(id==="auto_vowels")return "Schreibt A, E, I, O und U automatisch. Benötigt Automatik A und Automatik E.";
- if(id==="auto_speed")return "Verringert die Wartezeit zwischen automatischen Zeichen.";
- if(id==="purple_bonus")return "Jeder fünfte manuell geschriebene Buchstabe wird lila und bringt +5 Bonus-SP. Benötigt Tintentank.";
- if(id==="imperial_script")return "Prestige-Talent: Jeder manuell geschriebene Buchstabe bringt zusätzlich "+(2*l)+" SP.";
+ if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id])return window.__we08SkillEnglish[id][1];
+ if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
+ if(id==="unlock_auto")return gameState.settings.language==="en"?"Unlocks automatic typing. Requires Predictive keyboard.":"Schaltet die automatische Zeicheneingabe frei. Voraussetzung: Vorausschauende Tastatur.";
+ if(id==="keyboard_hint")return gameState.settings.language==="en"?"Highlights the next required key on the on-screen keyboard.":"Markiert auf der Bildschirmtastatur das Zeichen, das als Nächstes geschrieben werden muss.";
+ if(["auto_a","auto_e","auto_s","auto_t"].includes(id))return gameState.settings.language==="en"?"Automatically types "+id.slice(-1).toUpperCase()+" when it is next in the text.":"Schreibt das Zeichen "+id.slice(-1).toUpperCase()+" automatisch, sobald es im Text an der Reihe ist.";
+ if(id==="auto_vowels")return gameState.settings.language==="en"?"Automatically types A, E, I, O and U. Requires Automatic A and Automatic E.":"Schreibt A, E, I, O und U automatisch. Benötigt Automatik A und Automatik E.";
+ if(id==="auto_speed")return gameState.settings.language==="en"?"Reduces the delay between automatically typed characters.":"Verringert die Wartezeit zwischen automatischen Zeichen.";
+ if(id==="purple_bonus")return gameState.settings.language==="en"?"Every fifth manually typed character becomes purple and grants +5 bonus SP. Requires Ink tank.":"Jeder fünfte manuell geschriebene Buchstabe wird lila und bringt +5 Bonus-SP. Benötigt Tintentank.";
+ if(id==="imperial_script")return gameState.settings.language==="en"?"Prestige talent: each manually typed character grants an extra "+(2*l)+" SP.":"Prestige-Talent: Jeder manuell geschriebene Buchstabe bringt zusätzlich "+(2*l)+" SP.";
  const d=effect[id];if(!d)return s.desc||"";
  if(id==="free_speed")return "Goldzeichen entstehen nach "+d.v(l)+" Fortschrittsschritten. Minimum: 2.";
- if(id==="blue_power")return d.unit+": "+d.v(l).toFixed(1)+"×.";
- if(id==="blue_duration")return d.unit+": "+d.v(l).toFixed(1)+" Sekunden.";
+ if(id==="blue_power")return d.unit+": "+(2+l).toFixed(1)+"×.";
+ if(id==="blue_duration")return d.unit+": +"+d.v(l).toFixed(1)+" Sekunden."; 
+ if(id==="auto_speed")return d.unit+": "+d.v(l)+" ms.";
  return d.unit+": +"+d.v(l)+".";
 }
 function previewSkill(s,l){
  if(s.maxLevel<=1||!effect[s.id])return "";
  const d=effect[s.id],a=d.v(l),b=d.v(Math.min(s.maxLevel,l+1));
  const fmt=v=>s.id==="blue_power"?v.toFixed(1)+"×":s.id==="blue_duration"?v.toFixed(1)+" s":s.id==="free_speed"?v+" Schritte":v+"";
- return "Gerade: "+fmt(a)+" · Danach: "+fmt(b);
+ return (gameState.settings.language==="en"?"Now: ":"Gerade: ")+fmt(a)+(gameState.settings.language==="en"?" · Next: ":" · Danach: ")+fmt(b);
 }
 function configureSkills(){
  const by=id=>SKILL_TREE.find(s=>s.id===id);
@@ -138,7 +142,8 @@ function configureSkills(){
   if(["blue_power","blue_duration"].includes(s.id))s.group="Blaue Multiplikatoren";
   if(["keyboard_hint","unlock_auto","auto_a","auto_e","auto_s","auto_t","auto_vowels","auto_speed"].includes(s.id))s.group="Automatisierung";
   if(s.id==="special_power"){s.label="Zeichenkunde";s.group="Schreibkunst";}
-  if(s.id==="case_master")s.label="Groß-/Kleinschreibung";
+  if(s.id==="case_master")s.label=gameState.settings.language==="en"?"Uppercase & lowercase":"Groß-/Kleinschreibmeister";
+  if(s.id==="special_power")s.label=gameState.settings.language==="en"?"Symbol mastery":"Zeichenkunde";
   if(s.id==="keyboard_hint")s.requires=["base_click"];
   if(s.id==="unlock_auto")s.requires=["keyboard_hint"];
   if(s.id==="auto_vowels")s.requires=["auto_a","auto_e"];
@@ -199,13 +204,16 @@ function addPrestigeProgress(){
  if(!bought){const btn=document.createElement("button");btn.className="btn";btn.textContent="Freischalten";btn.onclick=()=>{if(gameState.prestige.points<4)return toast("Nicht genug Prestige-Punkte.");gameState.prestige.points-=4;gameState.prestige.upgrades.p_skilltree=1;saveGameState();renderSkillTree();addPrestigeProgress();toast("Imperiales Talent freigeschaltet.");};unlock.appendChild(btn);}
 }
 function renderStatsV08(){
- const tab=$("tab-stats");if(!tab)return;let box=$("we-extra-stats");if(!box){box=document.createElement("div");box.id="we-extra-stats";box.className="we-stat-wrap";tab.appendChild(box);}
+ const tab=$("tab-stats");if(!tab)return;
+ const oldHead=[...tab.querySelectorAll("h3")].find(x=>x.textContent==="Weitere Statistiken");oldHead?.remove();$("we-extra-stats")?.remove();
+ const box=tab.querySelector("div[style*='display:flex']")||tab.querySelector("div");if(!box)return;box.className="we-stat-wrap";box.style.background="transparent";box.style.padding="0";box.style.borderRadius="0";
  const s=gameState.stats,up=Object.values(gameState.upgrades).reduce((a,b)=>a+(Number(b)||0),0),attempts=(s.manualChars||0)+(s.errors||0);
- const vals=[["Fehler",s.errors||0],["Aktuelle fehlerfreie Serie",s.errorFreeStreak||0],["Längste fehlerfreie Serie",s.bestStreak||0],["Großbuchstaben korrekt",s.uppercaseCorrect||0],["Manuelle Zeichen",s.manualChars||0],["Automatische Zeichen",s.autoChars||0],["Goldzeichen",s.goldChars||0],["Purpurzeichen",s.purpleChars||0],["Blaue Zeichen",s.blueChars||0],["Abgeschlossene Texte",s.textsFinished||0],["Gekaufte Upgrade-Stufen",up],["Erfolgsquote",attempts?Math.round((s.manualChars||0)/attempts*100)+"%":"100%"],["Textfortschritt",Math.round((gameState.textProgress||0)/Math.max(1,getCurrentTextString().length)*100)+"%"],["Prestige insgesamt",gameState.prestige.totalPrestiges||0],["Prestige-Punkte",gameState.prestige.points||0]];
- box.innerHTML=vals.map(v=>"<div class='we-stat'><span>"+v[0]+"</span><b>"+v[1]+"</b></div>").join("");
+ const vals=[["Fehler",s.errors||0],["Aktuelle fehlerfreie Serie",s.errorFreeStreak||0],["Längste fehlerfreie Serie",s.bestStreak||0],["Großbuchstaben korrekt",s.uppercaseCorrect||0],["Purpurzeichen",s.purpleChars||0],["Blaue Zeichen",s.blueChars||0],["Gekaufte Upgrade-Stufen",up],["Erfolgsquote",attempts?Math.round((s.manualChars||0)/attempts*100)+"%":"100%"],["Textfortschritt",Math.round((gameState.textProgress||0)/Math.max(1,getCurrentTextString().length)*100)+"%"],["Prestige insgesamt",gameState.prestige.totalPrestiges||0],["Prestige-Punkte",gameState.prestige.points||0]];
+ vals.forEach(v=>{const row=document.createElement("div");row.className="we-stat";const a=document.createElement("span");a.textContent=v[0];const b=document.createElement("b");b.textContent=v[1];row.append(a,b);box.appendChild(row);});
 }
 function setupSettings(){
  const cfg=$("tab-config");if(!cfg||$("we-v08-design"))return;
+ $("we-theme-music")?.remove();document.body.classList.remove("we-paper");
  const design=document.createElement("section");design.id="we-v08-design";design.className="we-settings-card";
  design.innerHTML="<h3>Design · Hintergrund</h3><label>Hauptbereich</label><select id='we-v08-theme' style='width:100%;min-height:42px'><option value='paper'>Papier & Salbei</option><option value='dark'>Dunkel</option><option value='midnight'>Mitternacht</option></select><label style='display:block;margin-top:10px'>Linke Tableiste</label><select id='we-v08-nav' style='width:100%;min-height:42px'><option value='dark'>Dunkel</option><option value='sage'>Salbei</option><option value='blue'>Blau</option><option value='plum'>Violett</option></select>";
  const sounds=document.createElement("section");sounds.id="we-v08-sounds";sounds.className="we-settings-card";
