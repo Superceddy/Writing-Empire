@@ -12,8 +12,7 @@ const css=[
 '.admin-tabs button{flex:1 1 110px}.admin-tab{display:none}.admin-tab.active{display:block}',
 '.skill-group h3{color:#bb86fc;margin-bottom:10px}.skill-node{min-height:130px;touch-action:manipulation}',
 '.skill-node .preview{display:block;color:#aaa;font-size:11px;margin-top:5px}',
-'.char-blue{color:#168cff!important;font-weight:bold;text-shadow:0 0 5px #168cff}
-.char-green{color:#20a45b!important;font-weight:bold;text-shadow:0 0 5px #20a45b}',
+'.char-blue{color:#168cff!important;font-weight:bold;text-shadow:0 0 5px #168cff}.char-green{color:#20a45b!important;font-weight:bold;text-shadow:0 0 5px #20a45b}',
 '#we-extra-settings select{width:100%;min-height:44px}',
 '#we-prestige{background:#20172a;border:1px solid #8754ad;padding:14px;border-radius:10px;margin:12px 0}',
 '.prestige-tree{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}',
