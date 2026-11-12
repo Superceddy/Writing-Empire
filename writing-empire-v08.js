@@ -103,9 +103,14 @@ const effect={
  free_speed:{unit:"Fortschrittsschritte bis zum Goldzeichen",v:l=>Math.max(2,6-l)},
  purple_power:{unit:"Zusatz-SP pro Purpurzeichen",v:l=>2*l},
  gold_power:{unit:"Zusatz-SP pro Goldzeichen",v:l=>3*l},
- blue_power:{unit:"Multiplikator für blaue Zeichen",v:l=>1+l},
+ blue_power:{unit:"Multiplikator für blaue Zeichen",v:l=>2+l},
  blue_duration:{unit:"Zusätzliche Dauer des blauen Bonus",v:l=>1.5*l},
- auto_speed:{unit:"Automatikintervall",v:l=>Math.max(200,3000-500*l)},
+ auto_speed:{unit:"Automatikintervall",v:l=>Math.max(250,3000-300*l-(gameState.prestige?.upgrades?.p_auto||0)*150)},
+ gold_frequency:{unit:"Abstand zwischen Goldzeichen",v:l=>Math.max(16,42-4*l-2*(gameState.upgrades.gold_capacity||0)-3*(gameState.prestige?.upgrades?.p_goldchance||0))},
+ gold_capacity:{unit:"Abstand zwischen Goldzeichen",v:l=>Math.max(16,42-4*(gameState.upgrades.gold_frequency||0)-2*l-3*(gameState.prestige?.upgrades?.p_goldchance||0))},
+ purple_frequency:{unit:"Abstand zwischen Purpurzeichen",v:l=>Math.max(10,28-3*l-2*(gameState.prestige?.upgrades?.p_purplechance||0))},
+ streak_power:{unit:"Zusatz-SP pro fehlerfreiem Zeichen",v:l=>l},
+ special_power:{unit:"Zusatz-SP pro Sonderzeichen",v:l=>2*l},
  green_focus:{unit:"Bonus-SP je 5 fehlerfreie Zeichen",v:l=>l},
  red_rare:{unit:"Bonus-SP für Q, X, Y, Z und J",v:l=>5*l},
  long_streak:{unit:"Bonus-SP je 10 fehlerfreie Zeichen",v:l=>l}
@@ -114,11 +119,16 @@ function describeSkill(s,l){
  const id=s.id;
  if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id])return window.__we08SkillEnglish[id][1];
  if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
+ if(id==="blue_unlock")return gameState.settings.language==="en"?"Unlocks blue multiplier characters. They appear every 75 text positions.":"Schaltet blaue Multiplikator-Zeichen frei. Sie erscheinen alle 75 Textpositionen.";
  if(id==="unlock_auto")return gameState.settings.language==="en"?"Unlocks automatic typing. Requires Predictive keyboard.":"Schaltet die automatische Zeicheneingabe frei. Voraussetzung: Vorausschauende Tastatur.";
  if(id==="keyboard_hint")return gameState.settings.language==="en"?"Highlights the next required key on the on-screen keyboard.":"Markiert auf der Bildschirmtastatur das Zeichen, das als Nächstes geschrieben werden muss.";
  if(["auto_a","auto_e","auto_s","auto_t"].includes(id))return gameState.settings.language==="en"?"Automatically types "+id.slice(-1).toUpperCase()+" when it is next in the text.":"Schreibt das Zeichen "+id.slice(-1).toUpperCase()+" automatisch, sobald es im Text an der Reihe ist.";
  if(id==="auto_vowels")return gameState.settings.language==="en"?"Automatically types A, E, I, O and U. Requires Automatic A and Automatic E.":"Schreibt A, E, I, O und U automatisch. Benötigt Automatik A und Automatik E.";
- if(id==="auto_speed")return gameState.settings.language==="en"?"Reduces the delay between automatically typed characters.":"Verringert die Wartezeit zwischen automatischen Zeichen.";
+ if(id==="auto_speed")return gameState.settings.language==="en"?"Automatic typing interval: "+effect[id].v(l)+" ms.":"Automatikintervall: "+effect[id].v(l)+" ms.";
+ if(id==="gold_frequency"||id==="gold_capacity")return (gameState.settings.language==="en"?"Gold characters appear every ":"Goldzeichen erscheinen alle ")+effect[id].v(l)+" progress steps.";
+ if(id==="purple_frequency")return (gameState.settings.language==="en"?"Purple characters appear every ":"Purpurzeichen erscheinen alle ")+effect[id].v(l)+" text positions.";
+ if(id==="streak_power")return (gameState.settings.language==="en"?"Each correct character grants +":"Jedes fehlerfreie Zeichen gibt +")+l+" SP.";
+ if(id==="special_power")return (gameState.settings.language==="en"?"Each special character grants +":"Jedes Sonderzeichen gibt +")+(2*l)+" SP.";
  if(id==="purple_bonus")return gameState.settings.language==="en"?"Every fifth manually typed character becomes purple and grants +5 bonus SP. Requires Ink tank.":"Jeder fünfte manuell geschriebene Buchstabe wird lila und bringt +5 Bonus-SP. Benötigt Tintentank.";
  if(id==="imperial_script")return gameState.settings.language==="en"?"Prestige talent: each manually typed character grants an extra "+(2*l)+" SP.":"Prestige-Talent: Jeder manuell geschriebene Buchstabe bringt zusätzlich "+(2*l)+" SP.";
  const d=effect[id];if(!d)return s.desc||"";
@@ -131,31 +141,35 @@ function describeSkill(s,l){
 function previewSkill(s,l){
  if(s.maxLevel<=1||!effect[s.id])return "";
  const d=effect[s.id],a=d.v(l),b=d.v(Math.min(s.maxLevel,l+1));
- const fmt=v=>s.id==="blue_power"?v.toFixed(1)+"×":s.id==="blue_duration"?v.toFixed(1)+" s":s.id==="free_speed"?v+" Schritte":v+"";
+ const fmt=v=>s.id==="blue_power"?v.toFixed(1)+"×":s.id==="blue_duration"?v.toFixed(1)+" s":s.id==="free_speed"?v+" Schritte":s.id==="auto_speed"||s.id==="gold_frequency"||s.id==="gold_capacity"||s.id==="purple_frequency"?v+" steps":v+"";
  return (gameState.settings.language==="en"?"Now: ":"Gerade: ")+fmt(a)+(gameState.settings.language==="en"?" · Next: ":" · Danach: ")+fmt(b);
 }
 function configureSkills(){
  const by=id=>SKILL_TREE.find(s=>s.id===id);
  SKILL_TREE.forEach(s=>{
-  if(["base_click","case_master","special_power","vowel_power","consonant_power","green_focus","red_rare","long_streak"].includes(s.id))s.group="Schreibkunst";
-  if(["unlock_free","free_speed","gold_power"].includes(s.id))s.group="Gold";
-  if(["purple_bonus","purple_power"].includes(s.id))s.group="Purpur";
-  if(["blue_power","blue_duration"].includes(s.id))s.group="Blaue Multiplikatoren";
+  if(["base_click","case_master","special_power","vowel_power","consonant_power","green_focus","red_rare","long_streak","streak_power"].includes(s.id))s.group="Schreibkunst";
+  if(["unlock_free","free_speed","gold_frequency","gold_capacity","gold_power"].includes(s.id))s.group="Gold";
+  if(["purple_bonus","purple_power","purple_frequency"].includes(s.id))s.group="Purpur";
+  if(["blue_unlock","blue_power","blue_duration"].includes(s.id))s.group="Blaue Multiplikatoren";
   if(["keyboard_hint","unlock_auto","auto_a","auto_e","auto_s","auto_t","auto_vowels","auto_speed"].includes(s.id))s.group="Automatisierung";
   if(s.id==="special_power"){s.label="Zeichenkunde";s.group="Schreibkunst";}
   if(s.id==="case_master")s.label=gameState.settings.language==="en"?"Uppercase & lowercase":"Groß-/Kleinschreibmeister";
+  if(s.id==="gold_capacity")s.label=gameState.settings.language==="en"?"Gold vein expansion":"Goldader-Ausbau";
   if(s.id==="special_power")s.label=gameState.settings.language==="en"?"Symbol mastery":"Zeichenkunde";
   if(s.id==="keyboard_hint")s.requires=["base_click"];
   if(s.id==="unlock_auto")s.requires=["keyboard_hint"];
   if(s.id==="auto_vowels")s.requires=["auto_a","auto_e"];
   if(s.id==="purple_bonus")s.requires=["unlock_free"];
-  if(s.id==="purple_power")s.requires=["purple_bonus"];
+  if(s.id==="purple_power"||s.id==="purple_frequency")s.requires=["purple_bonus"];
+  if(s.id==="blue_power"||s.id==="blue_duration")s.requires=["blue_unlock"];
   if(s.id==="vowel_power"||s.id==="consonant_power")s.requires=["base_click"];
   if(s.id==="consonant_power")s.cost=Math.max(1200,s.cost);
  });
- if(!by("blue_power"))SKILL_TREE.push({id:"blue_power",label:"Blauer Multiplikator",desc:"Erhöht den Multiplikator blauer Zeichen.",cost:2600,maxLevel:5,row:5,requires:["base_click"],group:"Blaue Multiplikatoren"});
- if(!by("blue_duration"))SKILL_TREE.push({id:"blue_duration",label:"Blaue Dauer",desc:"Verlängert die Dauer des blauen Bonus.",cost:3200,maxLevel:5,row:5,requires:["blue_power"],group:"Blaue Multiplikatoren"});
- if(!by("gold_power"))SKILL_TREE.push({id:"gold_power",label:"Goldverstärker",desc:"Jedes Goldzeichen bringt +3 SP je Stufe.",cost:900,maxLevel:5,row:2,requires:["unlock_free"],group:"Gold"});
+ if(!by("blue_unlock"))SKILL_TREE.push({id:"blue_unlock",label:"Blaue Magie",desc:"Schaltet blaue Multiplikator-Zeichen frei.",cost:3000,maxLevel:1,row:5,requires:["purple_bonus"],group:"Blaue Multiplikatoren"});
+ if(!by("blue_power"))SKILL_TREE.push({id:"blue_power",label:"Blaue Resonanz",desc:"Erhöht den Multiplikator blauer Zeichen.",cost:2200,maxLevel:6,row:5,requires:["blue_unlock"],group:"Blaue Multiplikatoren"});
+ if(!by("blue_duration"))SKILL_TREE.push({id:"blue_duration",label:"Blaue Dauer",desc:"Verlängert die Dauer des blauen Bonus.",cost:2500,maxLevel:6,row:5,requires:["blue_unlock"],group:"Blaue Multiplikatoren"});
+ if(!by("gold_power"))SKILL_TREE.push({id:"gold_power",label:"Goldprägung",desc:"Jedes Goldzeichen bringt +3 SP je Stufe.",cost:1500,maxLevel:8,row:2,requires:["gold_frequency"],group:"Gold"});
+ if(!by("streak_power"))SKILL_TREE.push({id:"streak_power",label:"Fehlerfreie Serie",desc:"+1 SP pro fehlerfreiem Zeichen je Stufe.",cost:800,maxLevel:8,row:1,requires:["base_click"],group:"Schreibkunst"});
  if(!by("imperial_script"))SKILL_TREE.push({id:"imperial_script",label:"Imperiale Schreibkunst",desc:"Exklusives Prestige-Talent.",cost:5000,maxLevel:5,row:8,requires:["base_click"],group:"Prestige"});
 }
 function renderSkillNodes(group){
@@ -267,7 +281,7 @@ function setupAdminTabs(){
  const info=document.createElement("div");info.className="admin-section";info.innerHTML="<h3>Texte für alle Spieler</h3><p>Veröffentliche Community-Texte im Textbereich.</p>";pages.texts.appendChild(info);
  const progress=document.createElement("div");progress.className="admin-section";progress.innerHTML="<h3>Spielstand verwalten</h3><p>Erfolge, Textfortschritt und den gesamten Spielstand verwalten.</p>";pages.progress.appendChild(progress);
  const tools=document.createElement("div");tools.className="admin-section";tools.innerHTML="<h3>Werkzeuge</h3><p>Zusätzliche Admin-Werkzeuge.</p>";pages.tools.appendChild(tools);
- const mo=new MutationObserver(()=>{const pub=$("we-public-admin");if(pub){pages.texts.appendChild(pub);const bs=[...pub.querySelectorAll("button")],a=bs.find(x=>x.id==="we-del-ach"),d=bs.find(x=>x.id==="we-del-progress"),s=bs.find(x=>x.id==="we-del-save");if(a||d||s){const wrap=document.createElement("div");wrap.className="admin-section";wrap.append(a,d,s);pages.progress.appendChild(wrap);}}});mo.observe(panel,{childList:true,subtree:true});
+ const mo=new MutationObserver(()=>{const pub=$("we-public-admin");if(pub&&pub.parentElement!==pages.texts)pages.texts.appendChild(pub);if(pub&&!$("we-v08-admin-reset-actions")){const bs=[...pub.querySelectorAll("button")],a=bs.find(x=>x.id==="we-del-ach"),d=bs.find(x=>x.id==="we-del-progress"),s=bs.find(x=>x.id==="we-del-save");if(a||d||s){const wrap=document.createElement("div");wrap.id="we-v08-admin-reset-actions";wrap.className="admin-section";wrap.append(a,d,s);pages.progress.appendChild(wrap);}}});mo.observe(panel,{childList:true,subtree:true});
 }
 function sortAchievements(){
  const order={total_chars:0,total_sp:1,upgrades_bought:2,auto_unlocked:3,auto_chars:4,gold_chars:5,texts_finished:6,best_streak:7};
@@ -279,7 +293,7 @@ function install(){
  addTextOptions();configureSkills();sortAchievements();window.initKeyboard=initKeyboardV08;initKeyboardV08();
  window.buildSkillTreeUI=renderSkillTree;
  const oldUpdate=window.updateAllDisplays;window.updateAllDisplays=function(){oldUpdate();updateKeyboard();renderStatsV08();addPrestigeProgress();};
- const oldInput=window.handleKeyInput;window.handleKeyInput=function(ch){const before=gameState.textProgress;flashKey(ch);oldInput(ch);if(gameState.textProgress!==before&&gameState.settings.shift){gameState.settings.shift=false;updateKeyboard();}};
+ const oldInput=window.handleKeyInput;window.handleKeyInput=function(ch){const before=gameState.textProgress;flashKey(ch);oldInput(ch);if(gameState.textProgress>before){const last=gameState.history[gameState.history.length-1];const level=gameState.upgrades.imperial_script||0;if(level>0&&last&&(last.type==="manual"||last.type==="purple")){const bonus=2*level;gameState.sp+=bonus;gameState.totalSpEarned+=bonus;}if(gameState.settings.shift){gameState.settings.shift=false;updateKeyboard();}}};
  window.addEventListener("keydown",e=>{if(e.key==="CapsLock")gameState.settings.capsLock=!!e.getModifierState?.("CapsLock");if(e.key==="Shift")gameState.settings.shift=true;updateKeyboard();},true);
  window.addEventListener("keyup",e=>{if(e.key==="Shift")gameState.settings.shift=false;updateKeyboard();},true);
  setupSettings();setupLanguage();setupAdminTabs();
