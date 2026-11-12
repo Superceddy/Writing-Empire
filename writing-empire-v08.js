@@ -147,7 +147,7 @@ const effect={
 };
 function describeSkill(s,l){
  const id=s.id;
- if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id])return window.__we08SkillEnglish[id][1];
+ if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id]&&!["imperial_script","blue_power","blue_duration","auto_speed","gold_frequency","gold_capacity","purple_frequency","streak_power","special_power","gold_power"].includes(id))return window.__we08SkillEnglish[id][1];
  if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
  if(id==="blue_unlock")return gameState.settings.language==="en"?"Unlocks blue multiplier characters. They appear every 75 text positions.":"Schaltet blaue Multiplikator-Zeichen frei. Sie erscheinen alle 75 Textpositionen.";
  if(id==="gold_frequency"||id==="gold_capacity")return gameState.settings.language==="en"?"Gold characters appear every "+effect[id].v(l)+" text positions.":"Goldzeichen erscheinen alle "+effect[id].v(l)+" Textpositionen.";
