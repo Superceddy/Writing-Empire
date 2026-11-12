@@ -116,7 +116,7 @@ function initKeyboardV08(){
  }
  const space=makeKey("LEERZEICHEN"," ","space-key");space.onclick=()=>{handleKeyInput(" ");if(gameState.settings.shift)gameState.settings.shift=false;updateKeyboard();};bottom.appendChild(space);kb.appendChild(bottom);updateKeyboard();
 }
-function flashKey(ch){const id=ch===" "?"SPACE":(ch==="ß"||ch==="ẞ"?"ß":String(ch||"").toUpperCase());const b=$("key-"+id);if(!b)return;b.classList.add("we-key-pressed");clearTimeout(b.__flashTimer);b.__flashTimer=setTimeout(()=>b.classList.remove("we-key-pressed"),150);}
+function flashKey(ch){const id=ch===" "?"SPACE":(ch==="ß"||ch==="ẞ"?"ß":String(ch||"").toUpperCase());const b=$("key-"+id)||$("key-?123");if(!b)return;b.classList.add("we-key-pressed");clearTimeout(b.__flashTimer);b.__flashTimer=setTimeout(()=>b.classList.remove("we-key-pressed"),150);}
 window.handleRealKeyDown=function(e){
  if(e.key==="Escape"){if(typeof closeAdmin==="function")closeAdmin();return;}
  if(["Shift","CapsLock","Tab","Control","Alt","Meta","Dead"].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey)return;
