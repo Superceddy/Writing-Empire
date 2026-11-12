@@ -114,7 +114,7 @@ function initKeyboardV08(){
  }
  const space=makeKey("LEERZEICHEN"," ","space-key");space.onclick=()=>{handleKeyInput(" ");if(gameState.settings.shift)gameState.settings.shift=false;updateKeyboard();};bottom.appendChild(space);kb.appendChild(bottom);updateKeyboard();
 }
-function flashKey(ch){const id=ch===" "?"SPACE":String(ch||"").toUpperCase();const b=$("key-"+id);if(!b)return;b.classList.add("we-key-pressed");clearTimeout(b.__flashTimer);b.__flashTimer=setTimeout(()=>b.classList.remove("we-key-pressed"),150);}
+function flashKey(ch){const id=ch===" "?"SPACE":(ch==="ß"||ch==="ẞ"?"ß":String(ch||"").toUpperCase());const b=$("key-"+id);if(!b)return;b.classList.add("we-key-pressed");clearTimeout(b.__flashTimer);b.__flashTimer=setTimeout(()=>b.classList.remove("we-key-pressed"),150);}
 window.handleRealKeyDown=function(e){
  if(e.key==="Escape"){if(typeof closeAdmin==="function")closeAdmin();return;}
  if(["Shift","CapsLock","Tab","Control","Alt","Meta","Dead"].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey)return;
@@ -122,6 +122,7 @@ window.handleRealKeyDown=function(e){
 };
 window.addEventListener("keyup",e=>{if(e.key==="Shift"||e.key==="CapsLock")updateKeyboard();});
 window.initKeyboard=initKeyboardV08;
+window.updateNextKeyboardKey=function(){document.querySelectorAll(".key.next-key,.key.auto-key").forEach(x=>x.classList.remove("next-key","auto-key"));if(!isUpgradePurchased("keyboard_hint"))return;const ch=getCurrentTextString()[gameState.textProgress];if(!ch)return;let key=ch===" "?"SPACE":(ch==="ß"||ch==="ẞ"?"ß":ch.toUpperCase());if(!$("key-"+key))key="?123";$("key-"+key)?.classList.add("next-key");};
 
 const groupOrder=["Schreibkunst","Gold","Purpur","Blaue Multiplikatoren","Prestige","Automatisierung"];
 const effect={
