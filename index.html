@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Writing Empire v0.7.6</title>
+    <title>Writing Empire v0.7.7</title>
     <style>
         :root {
             --bg-dark: #121212;
@@ -355,7 +355,7 @@
 <body>
 
     <header>
-        <div style="font-size: 20px; font-weight: bold;">✒ Writing Empire <span style="font-size:12px; color:var(--text-muted);">v0.7.6</span></div>
+        <div style="font-size: 20px; font-weight: bold;">✒ Writing Empire <span style="font-size:12px; color:var(--text-muted);">v0.6</span></div>
         <div class="sp-display"><span id="global-sp">0</span> SP</div>
     </header>
 
@@ -499,8 +499,6 @@
         let supabaseClient = null;
         let currentUser = null;
         let cloudSaveTimer = null;
-        let cloudLoadPromise = null;
-        let cloudReady = false;
 
         // Systemkonfiguration & Datenmodelle
         const TEXT_TEMPLATES = {
@@ -828,8 +826,6 @@
                     const currentLvl = gameState.upgrades[skill.id] || 0;
                     const node = document.createElement("div");
                     node.className = "skill-node";
-                    node.dataset.skillId = skill.id;
-                    node.dataset.weGroup = skill.group || "Schreibkunst";
                     if (skill.color === "purple") node.style.borderColor = "#bb86fc";
                     
                     // Statustyp ermitteln
@@ -1102,26 +1098,12 @@ let pressed = e.key;
 
         // Lokaler Cache + optionale Cloud-Synchronisierung über Supabase.
         function saveGameState() {
-            const now=Date.now();
-            try {
-                localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
-                localStorage.setItem("writing_empire_v04_saved_at", String(now));
-            } catch(e) {
-                console.error("Lokaler Spielstand konnte nicht gespeichert werden",e);
-                setAuthStatus("Lokales Speichern fehlgeschlagen – bitte Browser-Speicher prüfen.");
-            }
-            if (currentUser && supabaseClient && cloudReady) {
+            localStorage.setItem("writing_empire_v04_save", JSON.stringify(gameState));
+            if (currentUser && supabaseClient) {
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(saveCloudState, 900);
             }
         }
-        window.addEventListener("pagehide",function(){
-            if(window.__weSkipPagehideSave)return;
-            try {
-                localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
-                localStorage.setItem("writing_empire_v04_saved_at",String(Date.now()));
-            } catch(e) { console.error("Spielstand beim Verlassen konnte nicht gesichert werden",e); }
-        });
 
         function loadGameState() {
             let saved = localStorage.getItem("writing_empire_v04_save") || localStorage.getItem("writing_empire_v03_save");
@@ -1147,14 +1129,12 @@ let pressed = e.key;
             }
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             supabaseClient.auth.getSession().then(async ({data}) => {
-                if (data.session) { currentUser = data.session.user; cloudReady=false; cloudReady=await loadCloudState(); }
-                else cloudReady=false;
+                if (data.session) { currentUser = data.session.user; await loadCloudState(); }
                 updateAuthStatus();
             });
             supabaseClient.auth.onAuthStateChange(async (_event, session) => {
                 currentUser = session?.user || null;
-                if (currentUser) { cloudReady=false; cloudReady=await loadCloudState(); }
-                else cloudReady=false;
+                if (currentUser) await loadCloudState();
                 updateAuthStatus();
             });
         }
@@ -1188,49 +1168,16 @@ let pressed = e.key;
             currentUser=null; updateAuthStatus();
         }
         async function loadCloudState() {
-            if(!currentUser || !supabaseClient) return false;
-            if(cloudLoadPromise) return await cloudLoadPromise;
-            cloudLoadPromise=(async()=>{
-            const {data,error}=await supabaseClient.from("player_saves").select("game_state,updated_at").eq("user_id",currentUser.id).maybeSingle();
-            if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return false; }
+            if(!currentUser || !supabaseClient) return;
+            const {data,error}=await supabaseClient.from("player_saves").select("game_state").eq("user_id",currentUser.id).maybeSingle();
+            if(error) { setAuthStatus("Cloud-Laden fehlgeschlagen: " + error.message); return; }
             if(data?.game_state) {
-                let localState=null;
-                try { localState=JSON.parse(localStorage.getItem("writing_empire_v04_save") || "null"); } catch(e) {}
                 const localTime=Number(localStorage.getItem("writing_empire_v04_saved_at") || 0);
                 const cloudState=data.game_state;
-                const cloudTime=Date.parse(data.updated_at || "") || 0;
-                const localChars=Number(localState?.stats?.totalChars)||0;
-                const cloudChars=Number(cloudState?.stats?.totalChars)||0;
-                const localSP=Number(localState?.totalSpEarned)||0;
-                const cloudSP=Number(cloudState?.totalSpEarned)||0;
-                const localProgress=Number(localState?.textProgress)||0,cloudProgress=Number(cloudState?.textProgress)||0;
-                const localAhead=!!localState&&(localChars>cloudChars||(localChars===cloudChars&&localSP>cloudSP)||(localChars===cloudChars&&localSP===cloudSP&&localProgress>cloudProgress));
-                const cloudAhead=cloudChars>localChars||(cloudChars===localChars&&cloudSP>localSP);
-                if(localState&&(localTime>cloudTime||localAhead)) {
-                    await saveCloudState();
-                    setAuthStatus("Lokaler Spielstand synchronisiert.");
-                    return;
-                }
-                if(!localState||cloudTime>localTime||cloudAhead) {
-                    gameState={...gameState,...cloudState,
-                        stats:{...gameState.stats,...(cloudState.stats||{})},
-                        settings:{...gameState.settings,...(cloudState.settings||{})},
-                        upgrades:cloudState.upgrades||{},freeStock:cloudState.freeStock||{},freeProgress:cloudState.freeProgress||{}};
-                    updateAllDisplays(); buildSkillTreeUI();
-                    try {
-                        localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
-                        localStorage.setItem("writing_empire_v04_saved_at",String(cloudTime||Date.now()));
-                    } catch(e) { console.error("Cloud-Spielstand konnte nicht lokal gesichert werden",e); }
-                    setAuthStatus("Cloud-Spielstand geladen.");
-                } else {
-                    await saveCloudState();
-                    setAuthStatus("Lokaler Spielstand synchronisiert.");
-                }
+                gameState={...gameState,...cloudState,stats:{...gameState.stats,...(cloudState.stats||{})},settings:{...gameState.settings,...(cloudState.settings||{})}};
+                updateAllDisplays(); buildSkillTreeUI(); localStorage.setItem("writing_empire_v04_save",JSON.stringify(gameState));
+                setAuthStatus("Cloud-Spielstand geladen.");
             } else { await saveCloudState(); }
-            return true;
-            })();
-            try { return await cloudLoadPromise; }
-            finally { cloudLoadPromise=null; }
         }
         async function saveCloudState() {
             if(!currentUser || !supabaseClient) return;
@@ -1243,14 +1190,12 @@ let pressed = e.key;
             if(confirm("Möchtest du deinen Spielstand wirklich unwiderruflich löschen?")) {
                 localStorage.removeItem("writing_empire_v04_save");
                 localStorage.removeItem("writing_empire_v03_save");
-                localStorage.removeItem("writing_empire_v04_saved_at");
                 if (currentUser && supabaseClient) supabaseClient.from("player_saves").delete().eq("user_id", currentUser.id);
                 window.location.reload();
             }
         }
     </script>
     <script src="writing-empire-v06.js"></script>
-    <script src="writing-empire-v07.js"></script>
-    <script src="writing-empire-v073.js"></script>
+    <script src="writing-empire-v077.js"></script>
 </body>
 </html>
