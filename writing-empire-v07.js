@@ -64,25 +64,7 @@ function patchRenderer(){
  };
 }
 function patchKeyboard(){
- try{window.removeEventListener("keydown",handleRealKeyDown);}catch(e){}
- if(window.__wePhysicalKeyboardHandler)window.removeEventListener("keydown",window.__wePhysicalKeyboardHandler,true);
- window.__wePhysicalKeyboardHandler=function(e){
-  if(["Shift","CapsLock","Control","Alt","Tab","Enter","Backspace","Escape"].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;
-  if(document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
-  if(e.key.length!==1&&e.key!==" ")return;
-  e.preventDefault();
-  let ch=e.key;
-  if(/^[a-z]$/i.test(ch)){
-   const osUpper=!!e.getModifierState?.("CapsLock")!==!!e.shiftKey;
-   const virtualUpper=!!gameState.settings.capsLock!==!!gameState.settings.shift;
-   ch=osUpper!==virtualUpper?ch.toUpperCase():ch.toLowerCase();
-   if(gameState.settings.shift)gameState.settings.shift=false;
-  }
-  const visual=document.getElementById("key-"+(ch===" "?"SPACE":ch.toUpperCase()));
-  if(visual){visual.classList.add("pressed");clearTimeout(visual.__wePressTimer);visual.__wePressTimer=setTimeout(()=>visual.classList.remove("pressed"),130);}
-  window.handleKeyInput(ch);
- };
- window.addEventListener("keydown",window.__wePhysicalKeyboardHandler,true);
+ // Mobile-only build: use the on-screen keyboard; do not intercept physical PC keys.
  const original=window.handleKeyInput;
  if(!window.__weWrappedKeyInput){
   window.__weWrappedKeyInput=true;
