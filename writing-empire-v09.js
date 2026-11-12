@@ -97,6 +97,7 @@ function addSkills(){
 function upgradeGroupFilter(){
  const tabs=$("we-group-tabs");if(!tabs||tabs.__we09)return;tabs.__we09=true;
  const buttons=[...tabs.querySelectorAll("button")];
+ if(!buttons.some(b=>b.textContent.trim()==="Grüne Zeichen")){const g=document.createElement("button");g.textContent="Grüne Zeichen";tabs.appendChild(g);buttons.push(g);}
  // Keep the full tree visible by default; only filter when a group is deliberately selected.
  buttons.forEach(b=>{
   const old=b.onclick;
@@ -157,6 +158,7 @@ function fixAdmin(){
   const b=document.createElement("button");b.id="we-v09-all-prestige";b.className="btn";b.textContent="Alle Prestige-Upgrades maximieren";
   b.onclick=()=>{if(!confirm("Alle Prestige-Upgrades maximieren?"))return;const costs={p_sp:10,p_gold:5,p_purple:5,p_start:5,p_auto:5,p_blue:5,p_discount:5,p_goldchance:5,p_purplechance:5,p_capacity:5,p_skilltree:1};Object.entries(costs).forEach(([id,max])=>gameState.prestige.upgrades[id]=max);gameState.prestige.points=0;updateAllDisplays();saveGameState();};
   section.appendChild(b);
+  const points=document.createElement("button");points.id="we-v09-grant-all-pp";points.className="btn";points.textContent="Alle Prestige-Punkte hinzufügen (+100.000)";points.onclick=()=>window.adminGrantAllPrestige();section.appendChild(points);
  };
  addAllPrestige();
  if(!window.__we09AdminFns){
@@ -186,10 +188,14 @@ function fixBlueMultiplier(){
   window.executeCharacterWrite=function(ch,type){const before=gameState.sp;old(ch,type);if(type==="blue"){const extra=Math.floor((gameState.upgrades.blue_precision||0)*.25*10)/10;const gain=Math.max(0,Math.floor((gameState.sp-before)*extra));gameState.sp+=gain;gameState.totalSpEarned+=gain;}};
  }
 }
+function greenUpgradeEffect(){
+ const old=window.handleKeyInput;if(typeof old!=="function"||window.__we09GreenWrapped)return;window.__we09GreenWrapped=true;
+ window.handleKeyInput=function(ch){const before=gameState.textProgress;old(ch);if(gameState.textProgress<=before)return;const streak=gameState.stats.errorFreeStreak||0;let bonus=0;bonus+=(gameState.upgrades.green_focus_v09||0)*(streak>0&&streak%5===0?2:0);bonus+=(gameState.upgrades.green_chain_v09||0)*(streak>0&&streak%10===0?5:0);if(bonus>0){gameState.sp+=bonus;gameState.totalSpEarned+=bonus;updateAllDisplays();saveGameState();}};
+}
 function install(){
  if(window.__weV09)return;window.__weV09=true;
  gameState.settings=Object.assign({autoEnabled:false},gameState.settings||{});
- allowTypingIntoFields();renameTabs();addSkills();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();
+ allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();
  const oldBuy=window.buyUpgrade;if(typeof oldBuy==="function"&&!window.__we09AutoPurchase){window.__we09AutoPurchase=true;window.buyUpgrade=function(id,cost){oldBuy(id,cost);if(id==="unlock_auto"||id==="auto_a"){gameState.settings.autoEnabled=true;const sw=$("switch-auto");if(sw)sw.checked=true;saveGameState();}};}
  const oldUpdate=window.updateAllDisplays;
  if(typeof oldUpdate==="function"&&!window.__we09FinalUpdate){
