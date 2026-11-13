@@ -50,6 +50,8 @@ function unifyStats(){
   cards.forEach(c=>{c.classList.add("we-v09-stat");target.appendChild(c);});
   extra.remove();
  }
+ const wrap=root.querySelector(".we-stat-wrap");
+ if(wrap)[...wrap.children].forEach(c=>c.classList.add("we-v09-stat"));
  root.querySelectorAll(".stat-card,.stat-item,.we-stat").forEach(c=>c.classList.add("we-v09-stat"));
 }
 function refreshCountdown(){
@@ -181,7 +183,7 @@ function repairAutoAchievements(){
 
 function install(){
  if(window.__weV09)return;window.__weV09=true;
- gameState.settings=Object.assign({autoEnabled:false},gameState.settings||{});
+ gameState.settings=Object.assign({autoEnabled:true},gameState.settings||{});
  allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();repairAutoAchievements();
  const oldBuy=window.buyUpgrade;if(typeof oldBuy==="function"&&!window.__we09AutoPurchase){window.__we09AutoPurchase=true;window.buyUpgrade=function(id,cost){oldBuy(id,cost);if(id==="unlock_auto"||id==="auto_a"){gameState.settings.autoEnabled=true;const sw=$("switch-auto");if(sw)sw.checked=true;saveGameState();}};}
  const oldUpdate=window.updateAllDisplays;
