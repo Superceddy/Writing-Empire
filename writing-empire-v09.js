@@ -50,6 +50,8 @@ function unifyStats(){
   cards.forEach(c=>{c.classList.add("we-v09-stat");target.appendChild(c);});
   extra.remove();
  }
+ const wrap=root.querySelector(".we-stat-wrap");
+ if(wrap)[...wrap.children].forEach(c=>c.classList.add("we-v09-stat"));
  root.querySelectorAll(".stat-card,.stat-item,.we-stat").forEach(c=>c.classList.add("we-v09-stat"));
 }
 function refreshCountdown(){
@@ -61,11 +63,12 @@ function refreshCountdown(){
  const grey=[...document.querySelectorAll('[id^="sub-grey-"]')];
  grey.forEach(span=>{
   const key=span.id.slice("sub-grey-".length);
+  const gold=$("sub-gold-"+key);if(gold)gold.textContent=(gameState.freeStock?.[key]||0)>0?String(gameState.freeStock[key]):"";
   const threshold=Math.max(2,6-(gameState.upgrades.free_speed||0));
   const prog=gameState.freeProgress?.[key]||0;
   span.textContent=(gameState.upgrades.unlock_free||0)>0?String(Math.max(0,threshold-prog)):"";
  });
- const mult=2+(gameState.upgrades.blue_power||0)+(gameState.prestige?.upgrades?.p_blue||0);
+ const mult=2+(gameState.upgrades.blue_power||0)+((gameState.upgrades.blue_precision||0)+(gameState.prestige?.upgrades?.p_blue||0))*.25;
  let n=$("we-v09-blue-mult");if(!n){n=document.createElement("div");n.id="we-v09-blue-mult";$("virtual-keyboard")?.after(n);}
  if(n)n.textContent="Blauer Zeichen-Multiplikator: ×"+mult;
 }
@@ -96,18 +99,24 @@ function fixUpgradeCards(){
 }
 function fixSettings(){
  const cfg=$("tab-config");if(!cfg)return;
- // Remove duplicate language controls while keeping the primary selector.
- const langs=[...cfg.querySelectorAll("select")].filter(x=>/language|sprache/i.test(x.id+" "+x.parentElement?.textContent));
- langs.slice(1).forEach(x=>x.closest("section,.auth-card,.setting-row")?.remove()||x.remove());
- const move=(needle,heading)=>{
-  const el=[...cfg.querySelectorAll("input,select,button,label")].find(x=>(x.id+" "+x.parentElement?.textContent).toLowerCase().includes(needle));
-  if(!el)return;
-  let section=[...cfg.querySelectorAll("section,.auth-card")].find(s=>s.contains(el));
-  if(section){let h=section.querySelector("h3");if(h)h.textContent=heading;}
+ // Keep only the original language selector; v0.8 accidentally added a
+ // second selector with the same ID.
+ $("we-language-card")?.remove();
+ const moveGroup=(id,targetId,label)=>{
+  const control=$(id),target=$(targetId);if(!control||!target)return;
+  let group=control.closest(".form-group,.switch-container");
+  if(!group)group=control.parentElement;
+  if(!group||group===target||target.contains(group))return;
+  const labelNode=group.querySelector("label,span");
+  if(labelNode&&label)labelNode.textContent=label;
+  target.appendChild(group);
  };
- move("typing","Sounds · Tastaturklang");
- move("font","Design · Schriftgröße");
- move("background","Hintergrund · Farbe");
+ moveGroup("setting-fontsize","we-v08-design","Schriftgröße im Papier");
+ moveGroup("we-background","we-v08-design","Hintergrundfarbe");
+ moveGroup("setting-sound","we-v08-sounds","Tastaturklang");
+ const design=$("we-v08-design"),sounds=$("we-v08-sounds");
+ if(design){const h=design.querySelector("h3");if(h)h.textContent="Design · Hintergrund & Schrift";}
+ if(sounds){const h=sounds.querySelector("h3");if(h)h.textContent="Sounds";}
 }
 function fixAdmin(){
  const panel=$("admin-panel");if(!panel||panel.__we09)return;panel.__we09=true;
@@ -159,15 +168,70 @@ function fixBlueMultiplier(){
  const old=window.executeCharacterWrite;
  if(typeof old==="function"&&!window.__we09BlueWrapped){
   window.__we09BlueWrapped=true;
-  window.executeCharacterWrite=function(ch,type){const before=gameState.sp;old(ch,type);if(type==="blue"){const extra=Math.floor((gameState.upgrades.blue_precision||0)*.25*10)/10;const gain=Math.max(0,Math.floor((gameState.sp-before)*extra));gameState.sp+=gain;gameState.totalSpEarned+=gain;}};
+  window.executeCharacterWrite=function(ch,type){
+   if(type!=="blue")return old(ch,type);
+   const base=gameState.upgrades.blue_power||0;
+   const precision=(gameState.upgrades.blue_precision||0)+(gameState.prestige?.upgrades?.p_blue||0);
+   gameState.upgrades.blue_power=base+precision*.25;
+   try{old(ch,type);}
+   finally{gameState.upgrades.blue_power=base;}
+   gameState.blueUntil=(gameState.blueUntil||Date.now())+(gameState.upgrades.blue_duration_plus||0)*1000;
+  };
  }
 }
 function greenUpgradeEffect(){ /* Green characters are a real character type in v0.6. */ }
+function repairAutoAchievements(){
+ const values={auto_chars:gameState.stats.autoChars||0};
+ ACHIEVEMENTS.forEach(a=>{
+  if(a.type!=="auto_chars"||values.auto_chars<a.target||gameState.achievementsUnlocked.includes(a.id))return;
+  gameState.achievementsUnlocked.push(a.id);
+  const reward=a.reward||0;gameState.sp+=reward;gameState.totalSpEarned+=reward;
+  toast("Erfolg freigeschaltet: "+a.name);
+ });
+}
+
+
+function repairSpecialAutoAndGoldCountdown(){
+ const oldWrite=window.executeCharacterWrite;
+ if(typeof oldWrite==="function"&&!window.__we09GoldProgress){
+  window.__we09GoldProgress=true;
+  window.executeCharacterWrite=function(ch,type){
+   oldWrite(ch,type);
+   if(type==="gold"||(gameState.upgrades.unlock_free||0)<=0)return;
+   gameState.freeProgress=gameState.freeProgress||{};
+   gameState.freeStock=gameState.freeStock||{};
+   const key=ch===" "?"SPACE":String(ch).toUpperCase();
+   const threshold=Math.max(2,6-(gameState.upgrades.free_speed||0));
+   let progress=(gameState.freeProgress[key]||0)+1;
+   if(progress>=threshold){gameState.freeStock[key]=(gameState.freeStock[key]||0)+1;progress=0;}
+   gameState.freeProgress[key]=progress;
+  };
+ }
+ const oldLoop=window.gameLoop;
+ if(typeof oldLoop==="function"&&!window.__we09SpecialAuto){
+  window.__we09SpecialAuto=true;
+  window.gameLoop=function(){
+   const text=getCurrentTextString();
+   const ch=text?.[gameState.textProgress];
+   if(ch===undefined)return oldLoop();
+   if(!gameState.settings.autoEnabled)return oldLoop();
+   const color=window.colorAt?.(gameState.textProgress)||"";
+   const automationUnlocked=(gameState.upgrades.unlock_auto||0)>0;
+   if(automationUnlocked&&["green","blue","purple"].includes(color)){
+    window.executeCharacterWrite(ch,color);updateAllDisplays();saveGameState();return;
+   }
+   if(color==="gold"&&automationUnlocked&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){
+    window.executeCharacterWrite(ch,"gold");updateAllDisplays();saveGameState();return;
+   }
+   oldLoop();
+  };
+ }
+}
 
 function install(){
  if(window.__weV09)return;window.__weV09=true;
- gameState.settings=Object.assign({autoEnabled:false},gameState.settings||{});
- allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();
+ gameState.settings=Object.assign({autoEnabled:true},gameState.settings||{});
+ allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();repairAutoAchievements();repairSpecialAutoAndGoldCountdown();
  const oldBuy=window.buyUpgrade;if(typeof oldBuy==="function"&&!window.__we09AutoPurchase){window.__we09AutoPurchase=true;window.buyUpgrade=function(id,cost){oldBuy(id,cost);if(id==="unlock_auto"||id==="auto_a"){gameState.settings.autoEnabled=true;const sw=$("switch-auto");if(sw)sw.checked=true;saveGameState();}};}
  const oldUpdate=window.updateAllDisplays;
  if(typeof oldUpdate==="function"&&!window.__we09FinalUpdate){
@@ -175,7 +239,7 @@ function install(){
   window.updateAllDisplays=function(){oldUpdate();showPrestigePoints();unifyStats();refreshCountdown();repairAchievementProgress();};
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
- setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAchievementProgress();},500);
+ setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAutoAchievements();repairAchievementProgress();},500);
  const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.1";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
