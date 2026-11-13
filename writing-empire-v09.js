@@ -67,7 +67,7 @@ function refreshCountdown(){
   const prog=gameState.freeProgress?.[key]||0;
   span.textContent=(gameState.upgrades.unlock_free||0)>0?String(Math.max(0,threshold-prog)):"";
  });
- const mult=2+(gameState.upgrades.blue_power||0);
+ const mult=2+(gameState.upgrades.blue_power||0)+(gameState.upgrades.blue_precision||0)*.25;
  let n=$("we-v09-blue-mult");if(!n){n=document.createElement("div");n.id="we-v09-blue-mult";$("virtual-keyboard")?.after(n);}
  if(n)n.textContent="Blauer Zeichen-Multiplikator: ×"+mult;
 }
@@ -167,7 +167,15 @@ function fixBlueMultiplier(){
  const old=window.executeCharacterWrite;
  if(typeof old==="function"&&!window.__we09BlueWrapped){
   window.__we09BlueWrapped=true;
-  window.executeCharacterWrite=function(ch,type){const before=gameState.sp;old(ch,type);if(type==="blue"){const extra=Math.floor((gameState.upgrades.blue_precision||0)*.25*10)/10;const gain=Math.max(0,Math.floor((gameState.sp-before)*extra));gameState.sp+=gain;gameState.totalSpEarned+=gain;}};
+  window.executeCharacterWrite=function(ch,type){
+   if(type!=="blue")return old(ch,type);
+   const base=gameState.upgrades.blue_power||0;
+   const precision=gameState.upgrades.blue_precision||0;
+   gameState.upgrades.blue_power=base+precision*.25;
+   try{old(ch,type);}
+   finally{gameState.upgrades.blue_power=base;}
+   gameState.blueUntil=(gameState.blueUntil||Date.now())+(gameState.upgrades.blue_duration_plus||0)*1000;
+  };
  }
 }
 function greenUpgradeEffect(){ /* Green characters are a real character type in v0.6. */ }
