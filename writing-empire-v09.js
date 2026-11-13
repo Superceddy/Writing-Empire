@@ -63,6 +63,7 @@ function refreshCountdown(){
  const grey=[...document.querySelectorAll('[id^="sub-grey-"]')];
  grey.forEach(span=>{
   const key=span.id.slice("sub-grey-".length);
+  const gold=$("sub-gold-"+key);if(gold)gold.textContent=(gameState.freeStock?.[key]||0)>0?String(gameState.freeStock[key]):"";
   const threshold=Math.max(2,6-(gameState.upgrades.free_speed||0));
   const prog=gameState.freeProgress?.[key]||0;
   span.textContent=(gameState.upgrades.unlock_free||0)>0?String(Math.max(0,threshold-prog)):"";
@@ -189,10 +190,48 @@ function repairAutoAchievements(){
  });
 }
 
+
+function repairSpecialAutoAndGoldCountdown(){
+ const oldWrite=window.executeCharacterWrite;
+ if(typeof oldWrite==="function"&&!window.__we09GoldProgress){
+  window.__we09GoldProgress=true;
+  window.executeCharacterWrite=function(ch,type){
+   oldWrite(ch,type);
+   if(type==="gold"||(gameState.upgrades.unlock_free||0)<=0)return;
+   gameState.freeProgress=gameState.freeProgress||{};
+   gameState.freeStock=gameState.freeStock||{};
+   const key=ch===" "?"SPACE":String(ch).toUpperCase();
+   const threshold=Math.max(2,6-(gameState.upgrades.free_speed||0));
+   let progress=(gameState.freeProgress[key]||0)+1;
+   if(progress>=threshold){gameState.freeStock[key]=(gameState.freeStock[key]||0)+1;progress=0;}
+   gameState.freeProgress[key]=progress;
+  };
+ }
+ const oldLoop=window.gameLoop;
+ if(typeof oldLoop==="function"&&!window.__we09SpecialAuto){
+  window.__we09SpecialAuto=true;
+  window.gameLoop=function(){
+   const text=getCurrentTextString();
+   const ch=text?.[gameState.textProgress];
+   if(ch===undefined)return oldLoop();
+   if(!gameState.settings.autoEnabled)return oldLoop();
+   const color=window.colorAt?.(gameState.textProgress)||"";
+   const automationUnlocked=(gameState.upgrades.unlock_auto||0)>0;
+   if(automationUnlocked&&["green","blue","purple"].includes(color)){
+    window.executeCharacterWrite(ch,color);updateAllDisplays();saveGameState();return;
+   }
+   if(color==="gold"&&automationUnlocked&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){
+    window.executeCharacterWrite(ch,"gold");updateAllDisplays();saveGameState();return;
+   }
+   oldLoop();
+  };
+ }
+}
+
 function install(){
  if(window.__weV09)return;window.__weV09=true;
  gameState.settings=Object.assign({autoEnabled:true},gameState.settings||{});
- allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();repairAutoAchievements();
+ allowTypingIntoFields();renameTabs();addSkills();greenUpgradeEffect();fixSettings();fixAdmin();upgradeGroupFilter();fixBlueMultiplier();repairAutoAchievements();repairSpecialAutoAndGoldCountdown();
  const oldBuy=window.buyUpgrade;if(typeof oldBuy==="function"&&!window.__we09AutoPurchase){window.__we09AutoPurchase=true;window.buyUpgrade=function(id,cost){oldBuy(id,cost);if(id==="unlock_auto"||id==="auto_a"){gameState.settings.autoEnabled=true;const sw=$("switch-auto");if(sw)sw.checked=true;saveGameState();}};}
  const oldUpdate=window.updateAllDisplays;
  if(typeof oldUpdate==="function"&&!window.__we09FinalUpdate){
