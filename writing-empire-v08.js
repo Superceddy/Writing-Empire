@@ -294,7 +294,7 @@ function setupSettings(){
  sounds.innerHTML="<h3>Sounds · Hintergrundmusik</h3><label class='switch-container'><span>Hintergrundmusik</span><input type='checkbox' id='we-v08-music' checked></label><label>Lautstärke</label><input id='we-v08-volume' type='range' min='0' max='0.12' step='0.005' value='0.025' style='width:100%'>";
  cfg.appendChild(design);cfg.appendChild(sounds);
  const palettes={paper:["#f3f0e6","#f8f5eb","#34443c"],dark:["#121212","#1e1e1e","#e0e0e0"],midnight:["#101827","#17243a","#e2eaf7"]},navs={dark:"#1e1e1e",sage:"#45685b",blue:"#233d62",plum:"#493052"};
- const apply=()=>{const p=palettes[$("we-v08-theme").value]||palettes.paper,n=navs[$("we-v08-nav").value]||navs.dark;document.documentElement.style.setProperty("--we-main-bg",p[0]);document.documentElement.style.setProperty("--surface-dark",p[1]);document.documentElement.style.setProperty("--text-main",p[2]);document.documentElement.style.setProperty("--we-nav-bg",n);document.querySelector("header").style.background=p[1];document.querySelector(".content-area").style.background=p[0];document.querySelector("nav").style.background=n;document.querySelectorAll(".paper-container").forEach(x=>{x.style.background=p[1];x.style.color=p[2];});gameState.settings.weV08Theme=$("we-v08-theme").value;gameState.settings.weV08Nav=$("we-v08-nav").value;saveGameState();};
+ const apply=()=>{const theme=$("we-v08-theme").value;document.body.classList.toggle("we-paper",theme==="paper");const p=palettes[theme]||palettes.paper,n=navs[$("we-v08-nav").value]||navs.dark;document.documentElement.style.setProperty("--we-main-bg",p[0]);document.documentElement.style.setProperty("--surface-dark",p[1]);document.documentElement.style.setProperty("--text-main",p[2]);document.documentElement.style.setProperty("--we-nav-bg",n);document.querySelector("header").style.background=p[1];document.querySelector(".content-area").style.background=p[0];document.querySelector("nav").style.background=n;document.querySelectorAll(".paper-container").forEach(x=>{x.style.background=p[1];x.style.color=p[2];});gameState.settings.weV08Theme=$("we-v08-theme").value;gameState.settings.weV08Nav=$("we-v08-nav").value;saveGameState();};
  $("we-v08-theme").value=gameState.settings.weV08Theme||"paper";$("we-v08-nav").value=gameState.settings.weV08Nav||"dark";apply();$("we-v08-theme").onchange=apply;$("we-v08-nav").onchange=apply;
  const AC=window.AudioContext||window.webkitAudioContext;let ctx=null,master=null,osc=[],musicTimer=null,melodyIndex=0;
  const stop=()=>{if(musicTimer)clearInterval(musicTimer);musicTimer=null;osc.forEach(o=>{try{o.stop();}catch(e){}});osc=[];if(ctx){ctx.close();ctx=null;master=null;}};
@@ -380,14 +380,20 @@ function setupAdminPanelEnhancements(){
 }
 
 function setupAdminTabs(){
- const panel=$("admin-panel");if(!panel||$("we-admin-tabs"))return;const grid=panel.querySelector(".admin-grid");if(!grid)return;
- const tabs=document.createElement("div");tabs.id="we-admin-tabs";tabs.className="we-admin-tabs";const pages={};
- [["overview","Übersicht"],["texts","Texte rein"],["progress","Spielstand"],["tools","Werkzeuge"]].forEach(([id,label],i)=>{const b=document.createElement("button");b.textContent=label;b.className=i===0?"active":"";b.onclick=()=>{tabs.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));Object.values(pages).forEach(x=>x.classList.remove("active"));pages[id].classList.add("active");};tabs.appendChild(b);const p=document.createElement("section");p.id="admin-"+id;p.className="we-admin-page"+(i===0?" active":"");pages[id]=p;panel.appendChild(p);});
- panel.insertBefore(tabs,grid);pages.overview.appendChild(grid);
- const info=document.createElement("div");info.className="admin-section";info.innerHTML="<h3>Texte für alle Spieler</h3><p>Veröffentliche Community-Texte im Textbereich.</p>";pages.texts.appendChild(info);
- const progress=document.createElement("div");progress.className="admin-section";progress.innerHTML="<h3>Spielstand verwalten</h3><p>Erfolge, Textfortschritt und den gesamten Spielstand verwalten.</p>";pages.progress.appendChild(progress);
- const tools=document.createElement("div");tools.className="admin-section";tools.innerHTML="<h3>Werkzeuge</h3><p>Zusätzliche Admin-Werkzeuge.</p>";pages.tools.appendChild(tools);
- const mo=new MutationObserver(()=>{const pub=$("we-public-admin");if(pub&&pub.parentElement!==pages.texts)pages.texts.appendChild(pub);if(pub&&!$("we-v08-admin-reset-actions")){const bs=[...pub.querySelectorAll("button")],a=bs.find(x=>x.id==="we-del-ach"),d=bs.find(x=>x.id==="we-del-progress"),s=bs.find(x=>x.id==="we-del-save");if(a||d||s){const wrap=document.createElement("div");wrap.id="we-v08-admin-reset-actions";wrap.className="admin-section";wrap.append(a,d,s);pages.progress.appendChild(wrap);}}});mo.observe(panel,{childList:true,subtree:true});
+ const panel=$("admin-panel");
+ if(!panel)return;
+ // Keep the original five admin tabs created by v0.6. The previous v0.8
+ // implementation created duplicate IDs and a second, incomplete tab system.
+ $("we-admin-tabs")?.remove();
+ panel.querySelectorAll(".we-admin-page").forEach(p=>p.remove());
+ const tabs=$("admin-tabs");
+ if(tabs){
+  tabs.style.display="flex";
+  tabs.style.flexWrap="wrap";
+  tabs.style.gap="7px";
+  tabs.style.position="static";
+  tabs.style.margin="12px 0";
+ }
 }
 function sortAchievements(){
  const order={total_chars:0,total_sp:1,upgrades_bought:2,auto_unlocked:3,auto_chars:4,gold_chars:5,texts_finished:6,best_streak:7};
