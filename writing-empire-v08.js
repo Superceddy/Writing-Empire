@@ -126,7 +126,7 @@ window.addEventListener("keyup",e=>{if(e.key==="Shift"||e.key==="CapsLock")updat
 window.initKeyboard=initKeyboardV08;
 window.updateNextKeyboardKey=function(){document.querySelectorAll(".key.next-key,.key.auto-key").forEach(x=>x.classList.remove("next-key","auto-key"));if(!isUpgradePurchased("keyboard_hint"))return;const ch=getCurrentTextString()[gameState.textProgress];if(!ch)return;let key=ch===" "?"SPACE":(ch==="ß"||ch==="ẞ"?"ß":ch.toUpperCase());if(!$("key-"+key))key="?123";$("key-"+key)?.classList.add("next-key");};
 
-const groupOrder=["Schreibkunst","Gold","Purpur","Blaue Multiplikatoren","Prestige","Automatisierung"];
+const groupOrder=["Schreibkunst","Gold","Purpur","Blaue Multiplikatoren","Grüne Zeichen","Prestige","Automatisierung"];
 const effect={
  base_click:{unit:"SP pro manuellem Zeichen",v:l=>l},
  case_master:{unit:"Bonus-SP pro korrekt getipptem Großbuchstaben",v:l=>l},
@@ -145,12 +145,17 @@ const effect={
  special_power:{unit:"Zusatz-SP pro Sonderzeichen",v:l=>2*l},
  imperial_script:{unit:"Zusatz-SP pro manuellem Zeichen",v:l=>2*l},
  green_focus:{unit:"Bonus-SP je 5 fehlerfreie Zeichen",v:l=>l},
+ green_power:{unit:"Zusatz-SP pro grünem Zeichen",v:l=>6+2*l},
+ green_bloom:{unit:"Zusätzliche SP für die nächsten Zeichen nach Grün",v:l=>1+l},
  red_rare:{unit:"Bonus-SP für Q, X, Y, Z und J",v:l=>5*l},
  long_streak:{unit:"Bonus-SP je 10 fehlerfreie Zeichen",v:l=>l}
 };
 function describeSkill(s,l){
  const id=s.id;
  if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id]&&!["imperial_script","blue_power","blue_duration","auto_speed","free_speed","gold_frequency","gold_capacity","purple_frequency","streak_power","special_power","gold_power"].includes(id))return window.__we08SkillEnglish[id][1];
+ if(id==="green_unlock")return gameState.settings.language==="en"?"Unlocks a green growth character every 120 text positions. It must be typed manually.":"Schaltet alle 120 Textpositionen ein grünes Wachstumszeichen frei. Es muss manuell geschrieben werden.";
+ if(id==="green_power")return gameState.settings.language==="en"?"Each green character grants "+(6+2*l)+" bonus SP.":"Jedes grüne Zeichen bringt "+(6+2*l)+" Bonus-SP.";
+ if(id==="green_bloom")return gameState.settings.language==="en"?"The green growth effect lasts "+(8+4*l)+" following characters and grants +"+(1+l)+" SP to each.":"Der grüne Wachstumseffekt hält "+(8+4*l)+" folgende Zeichen an und gibt jedem +"+(1+l)+" SP.";
  if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
  if(id==="blue_unlock")return gameState.settings.language==="en"?"Unlocks blue multiplier characters. They appear every 75 text positions.":"Schaltet blaue Multiplikator-Zeichen frei. Sie erscheinen alle 75 Textpositionen.";
  if(id==="gold_frequency"||id==="gold_capacity")return gameState.settings.language==="en"?"Gold characters appear every "+effect[id].v(l)+" text positions.":"Goldzeichen erscheinen alle "+effect[id].v(l)+" Textpositionen.";
@@ -186,6 +191,7 @@ function configureSkills(){
  const by=id=>SKILL_TREE.find(s=>s.id===id);
  SKILL_TREE.forEach(s=>{
   if(["base_click","case_master","special_power","vowel_power","consonant_power","green_focus","red_rare","long_streak","streak_power"].includes(s.id))s.group="Schreibkunst";
+  if(["green_unlock","green_power","green_bloom"].includes(s.id))s.group="Grüne Zeichen";
   if(["unlock_free","free_speed","gold_frequency","gold_capacity","gold_power"].includes(s.id))s.group="Gold";
   if(["purple_bonus","purple_power","purple_frequency"].includes(s.id))s.group="Purpur";
   if(["blue_unlock","blue_power","blue_duration"].includes(s.id))s.group="Blaue Multiplikatoren";
@@ -208,30 +214,43 @@ function configureSkills(){
  if(!by("blue_duration"))SKILL_TREE.push({id:"blue_duration",label:"Blaue Dauer",desc:"Verlängert die Dauer des blauen Bonus.",cost:2500,maxLevel:6,row:5,requires:["blue_unlock"],group:"Blaue Multiplikatoren"});
  if(!by("gold_power"))SKILL_TREE.push({id:"gold_power",label:"Goldprägung",desc:"Jedes Goldzeichen bringt +3 SP je Stufe.",cost:1500,maxLevel:8,row:2,requires:["gold_frequency"],group:"Gold"});
  if(!by("streak_power"))SKILL_TREE.push({id:"streak_power",label:"Fehlerfreie Serie",desc:"+1 SP pro fehlerfreiem Zeichen je Stufe.",cost:800,maxLevel:8,row:1,requires:["base_click"],group:"Schreibkunst"});
+ if(!by("green_unlock"))SKILL_TREE.push({id:"green_unlock",label:"Grüner Funke",desc:"Schaltet alle 120 Textpositionen ein grünes Wachstumszeichen frei. Es muss manuell geschrieben werden.",cost:2600,maxLevel:1,row:6,requires:["base_click"],group:"Grüne Zeichen"});
+ if(!by("green_power"))SKILL_TREE.push({id:"green_power",label:"Lebenskraft",desc:"Jedes grüne Zeichen bringt +6 Bonus-SP und +2 je Stufe.",cost:3200,maxLevel:8,row:6,requires:["green_unlock"],group:"Grüne Zeichen"});
+ if(!by("green_bloom"))SKILL_TREE.push({id:"green_bloom",label:"Wachstumsschub",desc:"Nach einem grünen Zeichen erhalten die nächsten Zeichen einen SP-Bonus; Dauer und Stärke steigen je Stufe.",cost:4200,maxLevel:6,row:7,requires:["green_power"],group:"Grüne Zeichen"});
  if(!by("imperial_script"))SKILL_TREE.push({id:"imperial_script",label:"Imperiale Schreibkunst",desc:"Exklusives Prestige-Talent.",cost:5000,maxLevel:5,row:8,requires:["base_click"],group:"Prestige"});
 }
 function renderSkillNodes(group){
  const root=$("skilltree-container");if(!root)return;root.innerHTML="";
- const list=SKILL_TREE.filter(s=>group==="Alle"||s.group===group).sort((a,b)=>(a.row||0)-(b.row||0));
- const rows=new Map();list.forEach(s=>{const r=s.row||0;if(!rows.has(r))rows.set(r,[]);rows.get(r).push(s);});
- [...rows.keys()].sort((a,b)=>a-b).forEach(r=>{
-  const row=document.createElement("div");row.className="skill-row";
-  rows.get(r).forEach(s=>{
-   const l=gameState.upgrades[s.id]||0,prestigeLock=s.id==="imperial_script"&&!(gameState.prestige.upgrades.p_skilltree||0);
-   const prereq=(s.requires||[]).every(id=>(gameState.upgrades[id]||0)>0),locked=prestigeLock||!prereq;
-   const n=document.createElement("div");n.className="skill-node";n.dataset.skillId=s.id;n.dataset.weGroup=s.group||"Schreibkunst";
-   if(s.group==="Blaue Multiplikatoren")n.style.borderColor="#438ee8";
-   if(s.group==="Purpur")n.style.borderColor="#a56bd1";
-   const h=document.createElement("h4");h.textContent=s.label+" ("+l+"/"+s.maxLevel+")";n.appendChild(h);
-   const p=document.createElement("p");p.textContent=describeSkill(s,l);n.appendChild(p);
-   if(s.maxLevel>1){const x=document.createElement("small");x.className="we-upgrade-preview";x.textContent=previewSkill(s,l);n.appendChild(x);}
-   const c=document.createElement("span");c.className="cost";
-   const rawCost=Math.round(s.cost*Math.pow(1.8,l));const cost=Math.max(1,Math.round(rawCost*(1-.05*(gameState.prestige.upgrades.p_discount||0))));
-   if(l>=s.maxLevel){n.classList.add("purchased");c.textContent="MAXSTUFE";}
-   else if(locked){n.classList.add("locked");c.textContent=prestigeLock?"Nur durch Prestige freischaltbar":"Voraussetzung fehlt";}
-   else{n.classList.add("available");c.textContent=cost+" SP";n.onclick=()=>buyUpgrade(s.id,rawCost);}
-   n.appendChild(c);row.appendChild(n);
-  });root.appendChild(row);
+ const selected=group||"Alle";
+ const skills=SKILL_TREE.filter(s=>selected==="Alle"||s.group===selected);
+ const names=selected==="Alle"?[...new Set(skills.map(s=>s.group||"Weitere Talente"))].sort((a,b)=>groupOrder.indexOf(a)-groupOrder.indexOf(b)):[selected];
+ names.forEach(name=>{
+  const section=document.createElement("section");section.className="skill-group";
+  const heading=document.createElement("h3");heading.textContent=name;section.appendChild(heading);
+  const list=skills.filter(s=>(s.group||"Weitere Talente")===name).sort((a,b)=>(a.row||0)-(b.row||0));
+  const rows=new Map();list.forEach(s=>{const r=s.row||0;if(!rows.has(r))rows.set(r,[]);rows.get(r).push(s);});
+  [...rows.keys()].sort((a,b)=>a-b).forEach(r=>{
+   const row=document.createElement("div");row.className="skill-row";
+   rows.get(r).forEach(s=>{
+    const level=gameState.upgrades[s.id]||0,prestigeLock=s.id==="imperial_script"&&!(gameState.prestige.upgrades.p_skilltree||0);
+    const prereq=(s.requires||[]).every(id=>(gameState.upgrades[id]||0)>0),locked=prestigeLock||!prereq;
+    const node=document.createElement("div");node.className="skill-node";node.dataset.skillId=s.id;
+    if(name==="Blaue Multiplikatoren")node.style.borderColor="#438ee8";
+    if(name==="Purpur")node.style.borderColor="#a56bd1";
+    if(name==="Grüne Zeichen")node.style.borderColor="#20a45b";
+    const h=document.createElement("h4");h.textContent=s.label+" ("+level+"/"+s.maxLevel+")";node.appendChild(h);
+    const p=document.createElement("p");p.textContent=describeSkill(s,level);node.appendChild(p);
+    if(level<s.maxLevel){const preview=document.createElement("small");preview.className="we-upgrade-preview";preview.textContent=previewSkill(s,level);if(preview.textContent)node.appendChild(preview);}
+    const costNode=document.createElement("span");costNode.className="cost";
+    const raw=Math.round(s.cost*Math.pow(1.8,level)),discount=gameState.prestige.upgrades.p_discount||0,cost=Math.max(1,Math.round(raw*(1-.05*discount)));
+    if(level>=s.maxLevel){node.classList.add("purchased");costNode.textContent="MAXSTUFE";}
+    else if(locked){node.classList.add("locked");costNode.textContent=prestigeLock?"Nur durch Prestige freischaltbar":"Voraussetzung fehlt";}
+    else{node.classList.add("available");costNode.textContent=cost+" SP";node.onclick=()=>buyUpgrade(s.id,raw);}
+    node.appendChild(costNode);row.appendChild(node);
+   });
+   section.appendChild(row);
+  });
+  root.appendChild(section);
  });
 }
 function renderSkillTree(){
@@ -239,7 +258,7 @@ function renderSkillTree(){
  let bar=$("we-group-tabs");if(!bar){bar=document.createElement("div");bar.id="we-group-tabs";bar.className="we-group-tabs";root.parentElement.insertBefore(bar,root);}
  const active=bar.querySelector("button.active")?.dataset.group||"Alle";bar.innerHTML="";
  const groups=["Alle"].concat(groupOrder.filter(g=>g!=="Prestige"||(gameState.prestige.upgrades.p_skilltree||0)));
- const groupEn={"Alle":"All","Schreibkunst":"Writing","Gold":"Gold","Purpur":"Purple","Blaue Multiplikatoren":"Blue Multipliers","Automatisierung":"Automation","Prestige":"Prestige"};
+ const groupEn={"Alle":"All","Schreibkunst":"Writing","Gold":"Gold","Purpur":"Purple","Blaue Multiplikatoren":"Blue Multipliers","Grüne Zeichen":"Green Characters","Automatisierung":"Automation","Prestige":"Prestige"};
  groups.forEach((g,i)=>{const b=document.createElement("button");b.type="button";b.textContent=gameState.settings.language==="en"?groupEn[g]:g;b.dataset.group=g;b.className=(g===active||(!groups.includes(active)&&i===0))?"active":"";b.onclick=()=>{bar.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));renderSkillNodes(g);};bar.appendChild(b);});
  const selected=bar.querySelector("button.active")?.dataset.group||"Alle";renderSkillNodes(selected);
 }
@@ -263,7 +282,7 @@ function renderStatsV08(){
  const box=tab.querySelector("div[style*='display:flex']")||tab.querySelector("div");if(!box)return;box.className="we-stat-wrap";box.style.background="transparent";box.style.padding="0";box.style.borderRadius="0";
  const s=gameState.stats,up=Object.values(gameState.upgrades).reduce((a,b)=>a+(Number(b)||0),0),attempts=(s.manualChars||0)+(s.errors||0);
  box.querySelectorAll(".we-v08-stat").forEach(x=>x.remove());
- const vals=[["Fehler","Errors",s.errors||0],["Aktuelle fehlerfreie Serie","Current error-free streak",s.errorFreeStreak||0],["Längste fehlerfreie Serie","Best error-free streak",s.bestStreak||0],["Großbuchstaben korrekt","Correct uppercase letters",s.uppercaseCorrect||0],["Purpurzeichen","Purple characters",s.purpleChars||0],["Blaue Zeichen","Blue characters",s.blueChars||0],["Gekaufte Upgrade-Stufen","Upgrade levels purchased",up],["Erfolgsquote","Accuracy",attempts?Math.round((s.manualChars||0)/attempts*100)+"%":"100%"],["Textfortschritt","Text progress",Math.round((gameState.textProgress||0)/Math.max(1,getCurrentTextString().length)*100)+"%"],["Prestige insgesamt","Total prestiges",gameState.prestige.totalPrestiges||0],["Prestige-Punkte","Prestige points",gameState.prestige.points||0]];
+ const vals=[["Fehler","Errors",s.errors||0],["Aktuelle fehlerfreie Serie","Current error-free streak",s.errorFreeStreak||0],["Längste fehlerfreie Serie","Best error-free streak",s.bestStreak||0],["Großbuchstaben korrekt","Correct uppercase letters",s.uppercaseCorrect||0],["Purpurzeichen","Purple characters",s.purpleChars||0],["Blaue Zeichen","Blue characters",s.blueChars||0],["Grüne Zeichen","Green characters",s.greenChars||0],["Gekaufte Upgrade-Stufen","Upgrade levels purchased",up],["Erfolgsquote","Accuracy",attempts?Math.round((s.manualChars||0)/attempts*100)+"%":"100%"],["Textfortschritt","Text progress",Math.round((gameState.textProgress||0)/Math.max(1,getCurrentTextString().length)*100)+"%"],["Prestige insgesamt","Total prestiges",gameState.prestige.totalPrestiges||0],["Prestige-Punkte","Prestige points",gameState.prestige.points||0]];
  vals.forEach(v=>{const row=document.createElement("div");row.className="we-stat we-v08-stat";const a=document.createElement("span");a.textContent=gameState.settings.language==="en"?v[1]:v[0];const b=document.createElement("b");b.textContent=v[2];row.append(a,b);box.appendChild(row);});
 }
 function setupSettings(){

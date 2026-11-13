@@ -12,7 +12,7 @@ const css=[
 '.admin-tabs button{flex:1 1 110px}.admin-tab{display:none}.admin-tab.active{display:block}',
 '.skill-group h3{color:#bb86fc;margin-bottom:10px}.skill-node{min-height:130px;touch-action:manipulation}',
 '.skill-node .preview{display:block;color:#aaa;font-size:11px;margin-top:5px}',
-'.char-blue{color:#168cff!important;font-weight:bold;text-shadow:0 0 5px #168cff}',
+'.char-blue{color:#168cff!important;font-weight:bold;text-shadow:0 0 5px #168cff}.char-green{color:#20a45b!important;font-weight:bold;text-shadow:0 0 5px #20a45b}',
 '#we-extra-settings select{width:100%;min-height:44px}',
 '#we-prestige{background:#20172a;border:1px solid #8754ad;padding:14px;border-radius:10px;margin:12px 0}',
 '.prestige-tree{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}',
@@ -21,7 +21,7 @@ const css=[
 '@media(max-width:760px){#admin-panel{inset:0!important;width:100vw!important;height:100dvh!important;max-height:100dvh;border-radius:0;padding:10px}.admin-tabs{top:48px}}'
 ].join('');
 const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
-gameState.stats=Object.assign({purpleChars:0,blueChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});
+gameState.stats=Object.assign({purpleChars:0,blueChars:0,greenChars:0,errorFreeStreak:0,bestStreak:0,errors:0,uppercaseCorrect:0},gameState.stats||{});
 gameState.prestige=Object.assign({points:0,level:0,upgrades:{},totalPrestiges:0},gameState.prestige||{});
 gameState.settings=Object.assign({language:"de",background:"default",capsLock:false,shift:false},gameState.settings||{});
 gameState.specialKeyMode=false;gameState.blueUntil=gameState.blueUntil||0;gameState.customTexts=gameState.customTexts||{};
@@ -86,14 +86,15 @@ function colorAt(i){
  if(i>=gameState.textProgress&&(i-5)%pEvery===0&&isUpgradePurchased("purple_bonus"))return "purple";
  if(i>=gameState.textProgress&&(i-10)%gEvery===0&&isUpgradePurchased("unlock_free"))return "gold";
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
+ if(i>=gameState.textProgress&&(i-25)%120===0&&isUpgradePurchased("green_unlock"))return "green";
  return "";
 }
 window.colorAt=colorAt;
 window.renderPaper=function(){
  const paper=byId("paper");if(!paper)return;paper.innerHTML="";
- gameState.history.forEach(item=>{const x=document.createElement("span");x.textContent=item.char;x.className=item.type==="gold"?"char-gold":item.type==="purple"?"char-purple":item.type==="blue"?"char-blue":"char-normal";paper.appendChild(x);});
+ gameState.history.forEach(item=>{const x=document.createElement("span");x.textContent=item.char;x.className=item.type==="gold"?"char-gold":item.type==="purple"?"char-purple":item.type==="blue"?"char-blue":item.type==="green"?"char-green":"char-normal";paper.appendChild(x);});
  const t=getCurrentTextString();
- for(let i=gameState.textProgress;i<t.length;i++){const x=document.createElement("span");x.textContent=t[i];if(i===gameState.textProgress)x.className="char-next";else{const c=colorAt(i);if(c==="gold")x.className="char-gold";else if(c==="purple")x.className="char-purple";else if(c==="blue")x.className="char-blue";else x.style.color="#aaa";}paper.appendChild(x);}
+ for(let i=gameState.textProgress;i<t.length;i++){const x=document.createElement("span");x.textContent=t[i];if(i===gameState.textProgress)x.className="char-next";else{const c=colorAt(i);if(c==="gold")x.className="char-gold";else if(c==="purple")x.className="char-purple";else if(c==="blue")x.className="char-blue";else if(c==="green")x.className="char-green";else x.style.color="#aaa";}paper.appendChild(x);}
  updateNextKeyboardKey();
 };
 window.updateNextKeyboardKey=function(){
@@ -112,7 +113,7 @@ window.handleKeyInput=function(input){
  if(input!==expected){gameState.stats.errors++;gameState.stats.errorFreeStreak=0;return;}
  gameState.specialKeyMode=false;if(gameState.settings.shift)gameState.settings.shift=false;gameState.stats.errorFreeStreak++;gameState.stats.bestStreak=Math.max(gameState.stats.bestStreak,gameState.stats.errorFreeStreak);
  if(/[A-ZÄÖÜ]/.test(expected))gameState.stats.uppercaseCorrect++;
- let type=colorAt(gameState.textProgress);if(type!=="gold"&&type!=="purple"&&type!=="blue")type="manual";if(type==="manual"&&gameState.settings.freeEnabled&&isUpgradePurchased("unlock_free")){const stockKey=expected===" "?"SPACE":expected.toUpperCase();if((gameState.freeStock[stockKey]||0)>0){gameState.freeStock[stockKey]--;type="gold";}}
+ let type=colorAt(gameState.textProgress);if(type!=="gold"&&type!=="purple"&&type!=="blue"&&type!=="green")type="manual";if(type==="manual"&&gameState.settings.freeEnabled&&isUpgradePurchased("unlock_free")){const stockKey=expected===" "?"SPACE":expected.toUpperCase();if((gameState.freeStock[stockKey]||0)>0){gameState.freeStock[stockKey]--;type="gold";}}
  if(type==="blue")gameState.blueUntil=Date.now()+5000+(gameState.upgrades.blue_duration||0)*1500;
  executeCharacterWrite(expected,type);
  if(type==="manual"&&/[A-ZÄÖÜ]/.test(expected)&&isUpgradePurchased("case_master")){const b=gameState.upgrades.case_master;gameState.sp+=b;gameState.totalSpEarned+=b;}
@@ -122,10 +123,12 @@ window.handleKeyInput=function(input){
 };
 window.executeCharacterWrite=function(ch,type){
  gameState.history.push({char:ch,type:type});gameState.textProgress++;gameState.stats.totalChars++;
- if(type==="manual"||type==="purple"||type==="blue")gameState.stats.manualChars++;
+ if(type==="manual"||type==="purple"||type==="blue"||type==="green")gameState.stats.manualChars++;
  if(type==="auto")gameState.stats.autoChars++;if(type==="gold")gameState.stats.goldChars++;
- if(type==="purple")gameState.stats.purpleChars++;if(type==="blue")gameState.stats.blueChars++;
- let gain=1;if(type==="manual"||type==="purple"||type==="blue")gain+=gameState.upgrades.base_click||0;
+ if(type==="purple")gameState.stats.purpleChars++;if(type==="blue")gameState.stats.blueChars++;if(type==="green")gameState.stats.greenChars=(gameState.stats.greenChars||0)+1;
+ if(type==="green")gameState.greenBoostUntil=gameState.textProgress+9+4*(gameState.upgrades.green_bloom||0);
+ let gain=1;if(type==="manual"||type==="purple"||type==="blue"||type==="green")gain+=gameState.upgrades.base_click||0;
+ if(type==="green")gain+=6+2*(gameState.upgrades.green_power||0);else if(gameState.greenBoostUntil>gameState.textProgress)gain+=1+(gameState.upgrades.green_bloom||0);
  if(type==="purple")gain+=5+2*(gameState.upgrades.purple_power||0);
  if(type==="gold")gain+=3*(gameState.upgrades.gold_power||0);
  if(Date.now()<gameState.blueUntil)gain*=2+(gameState.upgrades.blue_power||0);
@@ -139,7 +142,7 @@ window.gameLoop=function(){
  const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
  if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
  if(!gameState.settings.autoEnabled)return;
- if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return;
+ if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue"||colorAt(gameState.textProgress)==="green")return;
  msCounter+=100;autoACounter+=100;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
  const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===c.toUpperCase());
@@ -152,7 +155,7 @@ window.getAutoCooldownMs=function(){
  const text=getCurrentTextString(),ch=text[gameState.textProgress];
  if(ch===undefined||!gameState.settings.autoEnabled)return null;
  if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled)return 0;
- if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue")return null;
+ if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue"||colorAt(gameState.textProgress)==="green")return null;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
  const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===ch.toUpperCase());
  if(specific||(isUpgradePurchased("auto_vowels")&&"AEIOU".includes(ch.toUpperCase())))return Math.max(0,1800-autoACounter);
