@@ -250,7 +250,7 @@ function install(){
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
  setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAutoAchievements();repairAchievementProgress();},500);
- const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.1";
+ const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.3";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
 })();
