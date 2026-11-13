@@ -67,7 +67,7 @@ function refreshCountdown(){
   const prog=gameState.freeProgress?.[key]||0;
   span.textContent=(gameState.upgrades.unlock_free||0)>0?String(Math.max(0,threshold-prog)):"";
  });
- const mult=2+(gameState.upgrades.blue_power||0)+(gameState.upgrades.blue_precision||0)*.25;
+ const mult=2+(gameState.upgrades.blue_power||0)+((gameState.upgrades.blue_precision||0)+(gameState.prestige?.upgrades?.p_blue||0))*.25;
  let n=$("we-v09-blue-mult");if(!n){n=document.createElement("div");n.id="we-v09-blue-mult";$("virtual-keyboard")?.after(n);}
  if(n)n.textContent="Blauer Zeichen-Multiplikator: ×"+mult;
 }
@@ -170,7 +170,7 @@ function fixBlueMultiplier(){
   window.executeCharacterWrite=function(ch,type){
    if(type!=="blue")return old(ch,type);
    const base=gameState.upgrades.blue_power||0;
-   const precision=gameState.upgrades.blue_precision||0;
+   const precision=(gameState.upgrades.blue_precision||0)+(gameState.prestige?.upgrades?.p_blue||0);
    gameState.upgrades.blue_power=base+precision*.25;
    try{old(ch,type);}
    finally{gameState.upgrades.blue_power=base;}
