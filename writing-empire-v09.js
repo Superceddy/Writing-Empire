@@ -99,9 +99,21 @@ function fixUpgradeCards(){
 }
 function fixSettings(){
  const cfg=$("tab-config");if(!cfg)return;
- // Keep only the original language selector; v0.8 accidentally added a
- // second selector with the same ID.
+ // Keep one clear language card; discard the old combined "language & background" box.
  $("we-language-card")?.remove();
+ const legacy=$("we-extra-settings");
+ const language=$("we-language");
+ if(language&&!$("we-v103-language")){
+  const group=language.closest(".form-group")||language.parentElement;
+  const card=document.createElement("section");card.id="we-v103-language";card.className="we-settings-card";
+  const heading=document.createElement("h3");heading.textContent="Sprache";card.appendChild(heading);
+  if(group&&group!==legacy)card.appendChild(group);
+  else {const label=document.createElement("label");label.textContent="Sprache";card.appendChild(label);card.appendChild(language);}
+  cfg.appendChild(card);
+ }
+ const background=$("we-background");
+ if(background){const group=background.closest(".form-group");if(group)group.remove();else background.remove();}
+ legacy?.remove();
  const moveGroup=(id,targetId,label)=>{
   const control=$(id),target=$(targetId);if(!control||!target)return;
   let group=control.closest(".form-group,.switch-container");
@@ -111,47 +123,45 @@ function fixSettings(){
   if(labelNode&&label)labelNode.textContent=label;
   target.appendChild(group);
  };
- moveGroup("setting-fontsize","we-v08-design","Schriftgröße im Papier");
- moveGroup("we-background","we-v08-design","Hintergrundfarbe");
+ moveGroup("setting-fontsize","we-v08-design","Schriftgröße");
  moveGroup("setting-sound","we-v08-sounds","Tastaturklang");
  const design=$("we-v08-design"),sounds=$("we-v08-sounds");
- if(design){const h=design.querySelector("h3");if(h)h.textContent="Design · Hintergrund & Schrift";}
+ if(design){const h=design.querySelector("h3");if(h)h.textContent="Design";}
  if(sounds){const h=sounds.querySelector("h3");if(h)h.textContent="Sounds";}
+ // Remove empty wrappers/headings left behind by earlier versions.
+ cfg.querySelectorAll("section,.we-settings-card").forEach(card=>{
+  if(card.id==="we-v103-language"||card.id==="we-v08-design"||card.id==="we-v08-sounds"||card.id==="we-prestige")return;
+  const controls=card.querySelector("input,select,textarea,button");
+  if(!controls&&card!==cfg)card.remove();
+ });
 }
 function fixAdmin(){
- const panel=$("admin-panel");if(!panel||panel.__we09)return;panel.__we09=true;
- const mo=new MutationObserver(()=>{
-  const economy=$("admin-economy"),texts=$("admin-texts");
-  const pub=$("we-public-admin");
+ const panel=$("admin-panel");if(!panel||panel.__we103)return;panel.__we103=true;
+ const ensureAdminLayout=()=>{
+  const texts=$("admin-texts"),pub=$("we-public-admin");
   if(pub&&texts&&pub.parentElement!==texts)texts.appendChild(pub);
-  if(economy){
-   const controls=[...panel.querySelectorAll("button")].filter(b=>/SP pro Taste|Gold pro Taste|\+SP|\+Gold|max.*upgrade/i.test(b.textContent));
-   controls.forEach(b=>{const sec=b.closest(".admin-section")||b; if(sec.parentElement!==economy)economy.appendChild(sec);});
-  }
   const progress=$("admin-progress");
   if(progress){
-   const fields=["admin-sp-value","admin-pp-value"];
-   fields.forEach(id=>{const input=$(id);if(input){input.disabled=false;input.readOnly=false;input.style.pointerEvents="auto";input.style.zIndex="5";}});
+   ["admin-sp-value","admin-pp-value"].forEach(id=>{
+    const input=$(id);if(input){input.disabled=false;input.readOnly=false;input.style.pointerEvents="auto";}
+   });
+   if(!$("we-v09-admin-extra")){
+    const section=document.createElement("div");section.id="we-v09-admin-extra";section.className="admin-section";
+    const h=document.createElement("h3");h.textContent="Prestige-Werkzeuge";section.appendChild(h);
+    const b=document.createElement("button");b.className="btn";b.textContent="Alle Prestige-Upgrades maximieren";
+    b.onclick=()=>{if(!confirm("Alle Prestige-Upgrades maximieren?"))return;const costs={p_sp:10,p_gold:5,p_purple:5,p_start:5,p_auto:5,p_blue:5,p_discount:5,p_goldchance:5,p_purplechance:5,p_capacity:5,p_skilltree:1};gameState.prestige=gameState.prestige||{points:0,upgrades:{}};gameState.prestige.upgrades=gameState.prestige.upgrades||{};Object.entries(costs).forEach(([id,max])=>gameState.prestige.upgrades[id]=max);gameState.prestige.points=0;updateAllDisplays();saveGameState();};
+    const points=document.createElement("button");points.className="btn";points.textContent="Alle Prestige-Punkte hinzufügen (+100.000)";points.onclick=()=>window.adminGrantAllPrestige();
+    section.append(b,points);progress.appendChild(section);
+   }
   }
- });
- mo.observe(panel,{childList:true,subtree:true});
- const addAllPrestige=()=>{
-  const section=$("admin-progress")||panel;
-  if($("we-v09-all-prestige"))return;
-  const b=document.createElement("button");b.id="we-v09-all-prestige";b.className="btn";b.textContent="Alle Prestige-Upgrades maximieren";
-  b.onclick=()=>{if(!confirm("Alle Prestige-Upgrades maximieren?"))return;const costs={p_sp:10,p_gold:5,p_purple:5,p_start:5,p_auto:5,p_blue:5,p_discount:5,p_goldchance:5,p_purplechance:5,p_capacity:5,p_skilltree:1};Object.entries(costs).forEach(([id,max])=>gameState.prestige.upgrades[id]=max);gameState.prestige.points=0;updateAllDisplays();saveGameState();};
-  section.appendChild(b);
-  const points=document.createElement("button");points.id="we-v09-grant-all-pp";points.className="btn";points.textContent="Alle Prestige-Punkte hinzufügen (+100.000)";points.onclick=()=>window.adminGrantAllPrestige();section.appendChild(points);
+  const tabs=$("admin-tabs");if(tabs){tabs.style.display="flex";tabs.style.flexWrap="wrap";tabs.style.gap="7px";tabs.style.position="static";tabs.style.margin="12px 0";}
  };
- addAllPrestige();
+ const mo=new MutationObserver(ensureAdminLayout);mo.observe(panel,{childList:true,subtree:true});ensureAdminLayout();
  if(!window.__we09AdminFns){
   window.__we09AdminFns=true;
   window.adminGrantPrestige=function(){const input=$("admin-pp-value");const amount=Math.max(0,Number(input?.value)||0);gameState.prestige=gameState.prestige||{points:0,upgrades:{}};gameState.prestige.points+=amount;updateAllDisplays();saveGameState();toast("Prestige-Punkte vergeben.");};
   window.adminSetSP=function(){const input=$("admin-sp-value");gameState.sp=Math.max(0,Number(input?.value)||0);updateAllDisplays();saveGameState();toast("SP gesetzt.");};
-  window.adminUnlockAllAchievements=function(){
-   ACHIEVEMENTS.forEach(a=>{if(!gameState.achievementsUnlocked.includes(a.id)){gameState.achievementsUnlocked.push(a.id);gameState.sp+=a.reward||0;gameState.totalSpEarned+=a.reward||0;}});
-   saveGameState();renderAchievements();updateAllDisplays();toast("Alle Erfolge freigeschaltet.");
-  };
+  window.adminUnlockAllAchievements=function(){ACHIEVEMENTS.forEach(a=>{if(!gameState.achievementsUnlocked.includes(a.id)){gameState.achievementsUnlocked.push(a.id);gameState.sp+=a.reward||0;gameState.totalSpEarned+=a.reward||0;}});saveGameState();renderAchievements();updateAllDisplays();toast("Alle Erfolge freigeschaltet.");};
   window.adminGrantAllPrestige=function(){gameState.prestige=gameState.prestige||{points:0,upgrades:{}};gameState.prestige.points+=100000;updateAllDisplays();saveGameState();toast("Prestige-Punkte vergeben.");};
  }
 }
@@ -240,7 +250,7 @@ function install(){
  }
  refreshCountdown();repairAutomation();fixUpgradeCards();
  setInterval(()=>{refreshCountdown();repairAutomation();fixUpgradeCards();unlockExtraAchievements();repairAutoAchievements();repairAchievementProgress();},500);
- const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.1";
+ const version=[...document.querySelectorAll("header span")].find(x=>/v\d/.test(x.textContent));if(version)version.textContent="v1.0.3";
 }
 window.addEventListener("load",()=>setTimeout(install,1100));
 })();

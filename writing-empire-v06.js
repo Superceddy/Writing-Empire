@@ -81,12 +81,12 @@ additions.forEach(s=>{const old=SKILL_TREE.find(x=>x.id===s.id);if(old)Object.as
 SKILL_TREE.forEach(s=>{if(!s.group)s.group=s.color==="purple"?"Purpur":(s.id.indexOf("auto")===0||s.id==="unlock_auto"?"Automatisierung":(s.id.indexOf("free")>=0||s.id.indexOf("gold")>=0||s.id==="unlock_free"?"Gold":"Schreibkunst"));});
 
 function colorAt(i){
- const pEvery=Math.max(10,28-(gameState.upgrades.purple_frequency||0)*3-(gameState.prestige?.upgrades?.p_purplechance||0)*2);
+ const pEvery=Math.max(5,12-(gameState.upgrades.purple_frequency||0)-(gameState.prestige?.upgrades?.p_purplechance||0));
  const gEvery=Math.max(16,42-(gameState.upgrades.gold_frequency||0)*4-(gameState.upgrades.gold_capacity||0)*2-(gameState.prestige?.upgrades?.p_goldchance||0)*3);
  if(i>=gameState.textProgress&&(i-5)%pEvery===0&&isUpgradePurchased("purple_bonus"))return "purple";
  if(i>=gameState.textProgress&&(i-10)%gEvery===0&&isUpgradePurchased("unlock_free"))return "gold";
  if(i>=gameState.textProgress&&(i-15)%75===0&&isUpgradePurchased("blue_unlock"))return "blue";
- if(i>=gameState.textProgress&&(i-25)%120===0&&isUpgradePurchased("green_unlock"))return "green";
+ if(i>=gameState.textProgress&&(i-25)%40===0&&isUpgradePurchased("green_unlock"))return "green";
  return "";
 }
 window.colorAt=colorAt;
@@ -140,9 +140,13 @@ window.executeCharacterWrite=function(ch,type){
 };
 window.gameLoop=function(){
  const t=getCurrentTextString(),c=t[gameState.textProgress];if(c===undefined)return;
- if(colorAt(gameState.textProgress)==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
+ const color=colorAt(gameState.textProgress);
+ if(color==="gold"&&isUpgradePurchased("unlock_free")&&gameState.settings.freeEnabled){executeCharacterWrite(c,"gold");updateAllDisplays();saveGameState();return;}
  if(!gameState.settings.autoEnabled)return;
- if(colorAt(gameState.textProgress)==="purple"||colorAt(gameState.textProgress)==="blue"||colorAt(gameState.textProgress)==="green")return;
+ if(["purple","blue","green"].includes(color)){
+  if(isUpgradePurchased("unlock_auto")){executeCharacterWrite(c,color);updateAllDisplays();saveGameState();}
+  return;
+ }
  msCounter+=100;autoACounter+=100;
  const ids=["auto_a","auto_e","auto_s","auto_t"];
  const specific=ids.some(id=>isUpgradePurchased(id)&&id.slice(-1).toUpperCase()===c.toUpperCase());

@@ -140,7 +140,7 @@ const effect={
  auto_speed:{unit:"Automatikintervall",v:l=>Math.max(250,3000-300*l-(gameState.prestige?.upgrades?.p_auto||0)*150)},
  gold_frequency:{unit:"Abstand zwischen Goldzeichen",v:l=>Math.max(16,42-4*l-2*(gameState.upgrades.gold_capacity||0)-3*(gameState.prestige?.upgrades?.p_goldchance||0))},
  gold_capacity:{unit:"Abstand zwischen Goldzeichen",v:l=>Math.max(16,42-4*(gameState.upgrades.gold_frequency||0)-2*l-3*(gameState.prestige?.upgrades?.p_goldchance||0))},
- purple_frequency:{unit:"Abstand zwischen Purpurzeichen",v:l=>Math.max(10,28-3*l-2*(gameState.prestige?.upgrades?.p_purplechance||0))},
+ purple_frequency:{unit:"Abstand zwischen Purpurzeichen",v:l=>Math.max(5,12-l-(gameState.prestige?.upgrades?.p_purplechance||0))},
  streak_power:{unit:"Zusatz-SP pro fehlerfreiem Zeichen",v:l=>l},
  special_power:{unit:"Zusatz-SP pro Sonderzeichen",v:l=>2*l},
  imperial_script:{unit:"Zusatz-SP pro manuellem Zeichen",v:l=>2*l},
@@ -153,7 +153,7 @@ const effect={
 function describeSkill(s,l){
  const id=s.id;
  if(gameState.settings.language==="en"&&window.__we08SkillEnglish&&window.__we08SkillEnglish[id]&&!["imperial_script","blue_power","blue_duration","auto_speed","free_speed","gold_frequency","gold_capacity","purple_frequency","streak_power","special_power","gold_power"].includes(id))return window.__we08SkillEnglish[id][1];
- if(id==="green_unlock")return gameState.settings.language==="en"?"Unlocks a green growth character every 120 text positions. It must be typed manually.":"Schaltet alle 120 Textpositionen ein grünes Wachstumszeichen frei. Es muss manuell geschrieben werden.";
+ if(id==="green_unlock")return gameState.settings.language==="en"?"Unlocks a green growth character every 40 text positions. Automation can type it when unlocked.":"Schaltet alle 40 Textpositionen ein grünes Wachstumszeichen frei. Die Automatik kann es ebenfalls schreiben.";
  if(id==="green_power")return gameState.settings.language==="en"?"Each green character grants "+(6+2*l)+" bonus SP.":"Jedes grüne Zeichen bringt "+(6+2*l)+" Bonus-SP.";
  if(id==="green_bloom")return gameState.settings.language==="en"?"The green growth effect lasts "+(8+4*l)+" following characters and grants +"+(1+l)+" SP to each.":"Der grüne Wachstumseffekt hält "+(8+4*l)+" folgende Zeichen an und gibt jedem +"+(1+l)+" SP.";
  if(id==="unlock_free")return gameState.settings.language==="en"?"Unlocks the gold ink tank. Gold characters are stored and used automatically at the matching position.":"Schaltet den Goldtintentank frei. Goldzeichen werden gesammelt und an der passenden Stelle automatisch eingesetzt.";
@@ -214,7 +214,7 @@ function configureSkills(){
  if(!by("blue_duration"))SKILL_TREE.push({id:"blue_duration",label:"Blaue Dauer",desc:"Verlängert die Dauer des blauen Bonus.",cost:2500,maxLevel:6,row:5,requires:["blue_unlock"],group:"Blaue Multiplikatoren"});
  if(!by("gold_power"))SKILL_TREE.push({id:"gold_power",label:"Goldprägung",desc:"Jedes Goldzeichen bringt +3 SP je Stufe.",cost:1500,maxLevel:8,row:2,requires:["gold_frequency"],group:"Gold"});
  if(!by("streak_power"))SKILL_TREE.push({id:"streak_power",label:"Fehlerfreie Serie",desc:"+1 SP pro fehlerfreiem Zeichen je Stufe.",cost:800,maxLevel:8,row:1,requires:["base_click"],group:"Schreibkunst"});
- if(!by("green_unlock"))SKILL_TREE.push({id:"green_unlock",label:"Grüner Funke",desc:"Schaltet alle 120 Textpositionen ein grünes Wachstumszeichen frei. Es muss manuell geschrieben werden.",cost:2600,maxLevel:1,row:6,requires:["base_click"],group:"Grüne Zeichen"});
+ if(!by("green_unlock"))SKILL_TREE.push({id:"green_unlock",label:"Grüner Funke",desc:"Schaltet alle 40 Textpositionen ein grünes Wachstumszeichen frei. Die Automatik kann es ebenfalls schreiben.",cost:2600,maxLevel:1,row:6,requires:["base_click"],group:"Grüne Zeichen"});
  if(!by("green_power"))SKILL_TREE.push({id:"green_power",label:"Lebenskraft",desc:"Jedes grüne Zeichen bringt +6 Bonus-SP und +2 je Stufe.",cost:3200,maxLevel:8,row:6,requires:["green_unlock"],group:"Grüne Zeichen"});
  if(!by("green_bloom"))SKILL_TREE.push({id:"green_bloom",label:"Wachstumsschub",desc:"Nach einem grünen Zeichen erhalten die nächsten Zeichen einen SP-Bonus; Dauer und Stärke steigen je Stufe.",cost:4200,maxLevel:6,row:7,requires:["green_power"],group:"Grüne Zeichen"});
  if(!by("imperial_script"))SKILL_TREE.push({id:"imperial_script",label:"Imperiale Schreibkunst",desc:"Exklusives Prestige-Talent.",cost:5000,maxLevel:5,row:8,requires:["base_click"],group:"Prestige"});
